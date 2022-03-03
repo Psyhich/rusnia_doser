@@ -1,6 +1,9 @@
 [submodule "curl"]
-	path = curl
+	path = lib/curl
 	url = https://github.com/curl/curl
 [submodule "openssl-cmake"]
-	path = openssl-cmake
+	path = lib/openssl-cmake
 	url = https://github.com/janbar/openssl-cmake
+[submodule "lib/json"]
+	path = lib/json
+	url = https://github.com/nlohmann/json/

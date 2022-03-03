@@ -2,11 +2,13 @@
 #define UTILS_HPP
 
 #include <array>
+#include <map>
 #include <string>
 #include <vector>
 #include <random>
 
-const std::array<std::string, 500> useragents = {
+const std::array<std::string, 500> useragents = 
+{
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.116 Safari/537.36",
 	"Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.2; WOW64; Trident/7.0; .NET4.0E; .NET4.0C; InfoPath.3)",
 	"Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.2; WOW64; Trident/6.0; Touch; .NET4.0E; .NET4.0C; Tablet PC 2.0; .NET CLR 3.5.30729; .NET CLR 2.0.50727; .NET CLR 3.0.30729; MAARJS)",
@@ -519,27 +521,12 @@ inline static std::string ChoseUseragent()
 	return useragents[std::rand() % useragents.size()];
 }
 
-inline static std::string decodeURL(const std::string &stringToDecode)
+inline static void UpdateHeaders(std::map<std::string, std::string> &headers, const std::string &proxyIP)
 {
-	std::string ret;
-	char ch;
-	int i, ii;
-
-	for (i = 0; i < stringToDecode.length(); i++)
-	{
-		if (int(stringToDecode[i]) == 37)
-		{
-			sscanf(stringToDecode.substr(i + 1, 2).c_str(), "%x", &ii);
-			ch = static_cast<char>(ii);
-			ret += ch;
-			i += 2;
-		}
-		else
-		{
-			ret += stringToDecode[i];
-		}
-	}
-	return ret;
+	headers["User-Agent"] = ChoseUseragent();
+	headers["X-Forwarder-For"] = proxyIP;
 }
+
+std::string decodeURL(const std::string &stringToDecode);
 
 #endif // UTILS_HPP

