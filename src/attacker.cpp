@@ -8,7 +8,7 @@
 #include "curl_wrapper.h"
 #include "utils.h"
 
-void Fire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop)
+void HTTPFire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop)
 {
 	CURLLoader wrapper;
 
@@ -104,6 +104,10 @@ void Fire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop
 					std::cout << "Server" << currentTarget << " probably down";
 					break;
 				}
+				else if(shouldStop.load())
+				{
+					break;
+				}
 				else
 				{
 					std::cerr << "Proxy: " << proxyIP << " failed" << std::endl;
@@ -141,7 +145,7 @@ void Fire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop
 		const long targetRespCode = wrapper.Ping(AttackerConfig::DISCOVER_TIMEOUT_SECONDS);
 		if(targetRespCode >= 200 && targetRespCode < 400)
 		{
-			std::cout << "LOCK AND LOAD, READY TO STRIKE!" << std::endl;
+			std::cout << "LOCK AND LOAD, READY TO STRIKE " << currentTarget << "!" << std::endl;
 		}
 		else
 		{

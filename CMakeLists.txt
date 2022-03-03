@@ -11,8 +11,6 @@ set(HEADERS
 	include/curl_wrapper.h
 	include/utils.h
 	include/response.hpp
-	include/resource_checker.h
-	include/proxy_manager.h
 )
 
 set(SOURCES
@@ -20,8 +18,6 @@ set(SOURCES
 	src/attacker.cpp
 	src/curl_wrapper.cpp
 	src/utils.cpp
-	src/resource_checker.cpp
-	src/proxy_manager.cpp
 )
 
 add_subdirectory(lib/curl)

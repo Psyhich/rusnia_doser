@@ -14,7 +14,7 @@
 
 std::atomic<bool> g_shouldStop{false};
 
-void handle_sighup(int signum) 
+void signalHanlder(int signum) 
 {
 	std::cerr << "Stoping" << std::endl;
 	g_shouldStop.store(true);
@@ -22,6 +22,11 @@ void handle_sighup(int signum)
 
 int main(int argc, char **argv)
 {
+	signal(SIGHUP, signalHanlder);
+	signal(SIGTERM, signalHanlder);
+	signal(SIGABRT, signalHanlder);
+	signal(SIGINT, signalHanlder);
+
 	size_t maxThreads = 
 		std::thread::hardware_concurrency() == 0 ? 
 			2 : std::thread::hardware_concurrency();
@@ -47,6 +52,10 @@ int main(int argc, char **argv)
 	wrapper.SetTarget(AttackerConfig::APIS_LIST);
 	while(true)
 	{
+		if(g_shouldStop.load())
+		{
+			return 0;
+		}
 		if(auto resp = wrapper.Download();
 			resp->m_code >= 200 && resp->m_code < 300)
 		{
@@ -81,7 +90,7 @@ int main(int argc, char **argv)
 
 	for(size_t i = 0; i < maxThreads; i++)
 	{
-		pool.push_back(std::thread(Fire, apis, std::ref(g_shouldStop)));
+		pool.push_back(std::thread(HTTPFire, apis, std::ref(g_shouldStop)));
 	}
 
 	for(auto &thread : pool)
@@ -91,4 +100,5 @@ int main(int argc, char **argv)
 			thread.join();
 		}
 	}
+	std::cout << "Succesfully stoped" << std::endl;
 }
