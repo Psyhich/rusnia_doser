@@ -8,6 +8,11 @@ namespace AttackerConfig
 	inline static constexpr const char *APIS_LIST = "http://rockstarbloggers.ru/hosts.json";
 	inline static constexpr const size_t FIRE_TIMEOUT_SECONDS = 10;
 	inline static constexpr const size_t DISCOVER_TIMEOUT_SECONDS = 30;
+
+	namespace TCPAttacker
+	{
+		inline static constexpr const size_t PER_HOST_SOCKETS = 10;
+	}
 }
 
 // Proxy

@@ -11,13 +11,16 @@ set(HEADERS
 	include/curl_wrapper.h
 	include/utils.h
 	include/response.hpp
+	include/uri.h
 )
 
 set(SOURCES
 	main.cpp
-	src/attacker.cpp
 	src/curl_wrapper.cpp
 	src/utils.cpp
+	src/http_attacker.cpp
+	src/tcp_attacker.cpp
+	src/uri.cpp
 )
 
 add_subdirectory(lib/curl)

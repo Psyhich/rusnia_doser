@@ -1,6 +1,6 @@
 #include "curl_wrapper.h"
 
-CURLLoader::CURLLoader()
+CURLLoader::CURLLoader() noexcept
 {
 	std::call_once(g_curlInitFlag, curl_global_init, CURL_GLOBAL_ALL);
 
@@ -17,7 +17,7 @@ CURLLoader::CURLLoader()
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_SSL_VERIFYHOST, 0L);
 }
 
-void CURLLoader::SetTarget(const std::string &address)
+void CURLLoader::SetTarget(const std::string &address) noexcept
 {
 	if(!m_curlEnv)
 	{
@@ -33,7 +33,7 @@ void CURLLoader::SetTarget(const std::string &address)
 	}
 }
 
-void CURLLoader::SetProxy(const std::string &proxyIP, const std::string &proxyAuth)
+void CURLLoader::SetProxy(const std::string &proxyIP, const std::string &proxyAuth) noexcept
 {
 	if(!m_curlEnv)
 	{
@@ -61,7 +61,7 @@ void CURLLoader::SetProxy(const std::string &proxyIP, const std::string &proxyAu
 	}
 }
 
-void CURLLoader::SetHeaders(const Headers &headers)
+void CURLLoader::SetHeaders(const Headers &headers) noexcept
 {
 	struct curl_slist *headers_list{NULL};
 	for(auto const &[key, value] : headers)
@@ -72,7 +72,7 @@ void CURLLoader::SetHeaders(const Headers &headers)
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPHEADER, headers_list);
 }
 
-std::optional<Response> CURLLoader::Download(long timeout)
+std::optional<Response> CURLLoader::Download(long timeout) noexcept
 {
 	std::vector<char> readBuffer;
 
@@ -93,7 +93,7 @@ std::optional<Response> CURLLoader::Download(long timeout)
 	return Response(httpCode, std::move(readBuffer));
 }
 
-long CURLLoader::Ping(long timeout)
+long CURLLoader::Ping(long timeout) noexcept
 {
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEDATA, NULL);
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEFUNCTION, DoNothingCallback);
@@ -111,7 +111,7 @@ long CURLLoader::Ping(long timeout)
 	return httpCode;
 }
 
-size_t CURLLoader::DataCallback(void *contents, size_t size, size_t nmemb, void *userp)
+size_t CURLLoader::DataCallback(void *contents, size_t size, size_t nmemb, void *userp) noexcept
 {
 	std::vector<char> &readBuffer = *static_cast<std::vector<char>*>(userp);
 

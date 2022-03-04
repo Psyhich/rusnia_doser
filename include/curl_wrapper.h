@@ -15,7 +15,7 @@ inline static std::once_flag g_curlInitFlag;
 
 struct CURLDeleter
 {
-	void operator()(CURL *curlEnv)
+	void operator()(CURL *curlEnv) noexcept
 	{
 		curl_easy_cleanup(curlEnv);
 	}
@@ -24,40 +24,36 @@ using PCURL = std::unique_ptr<CURL, CURLDeleter>;
 
 using Headers = std::map<std::string, std::string>;
 
-class MultiLoader;
-
 class CURLLoader
 {
 public:
-	CURLLoader();
+	CURLLoader() noexcept;
 
-	CURLLoader(CURLLoader &&moveLoader) = default;
-	CURLLoader &operator=(CURLLoader &&moveLoader) = default;
+	CURLLoader(CURLLoader &&moveLoader) noexcept = default;
+	CURLLoader &operator=(CURLLoader &&moveLoader) noexcept = default;
 
 	CURLLoader(const CURLLoader &copyLoader) = delete;
 	CURLLoader &operator=(const CURLLoader &copyLoader) = delete;
 
-	void SetTarget(const std::string &address);
-	void SetProxy(const std::string &proxyIP, const std::string &proxyAuth);
-	void SetHeaders(const Headers &headers);
+	void SetTarget(const std::string &address) noexcept;
+	void SetProxy(const std::string &proxyIP, const std::string &proxyAuth) noexcept;
+	void SetHeaders(const Headers &headers) noexcept;
 
-	std::optional<Response> Download(long timeout=5);
-	long Ping(long timeout=5);
+	std::optional<Response> Download(long timeout=5) noexcept;
+	long Ping(long timeout=5) noexcept;
 
 private:
-	static size_t DataCallback(void *contents, size_t size, size_t nmemb, void *userp);
-	inline static size_t DoNothingCallback(void *, size_t, size_t size, void *)
+	static size_t DataCallback(void *contents, size_t size, size_t nmemb, void *userp) noexcept;
+	inline static size_t DoNothingCallback(void *, size_t, size_t size, void *) noexcept
 	{
 		return size;
 	}
 
 
-	inline static bool ProcessCode(CURLcode code)
+	inline static bool ProcessCode(CURLcode code) noexcept
 	{
 		return code == CURLE_OK;
 	}
-
-	friend class MultiLoader;
 private:
 	PCURL m_curlEnv;
 };

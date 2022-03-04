@@ -1,6 +1,11 @@
+#include <random>
+#include <algorithm>
+#include <climits>
+
 #include "utils.h"
 
-std::string decodeURL(const std::string &stringToDecode)
+
+std::string decodeURL(const std::string &stringToDecode) noexcept
 {
 	std::string ret;
 	char ch;
@@ -22,3 +27,13 @@ std::string decodeURL(const std::string &stringToDecode)
 	}
 	return ret;
 }
+
+void FillWithRandom(std::vector<char> &bufferToFill) noexcept
+{
+	std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> randomEngine;
+	std::generate(
+		std::begin(bufferToFill), 
+		std::end(bufferToFill), 
+		std::ref(randomEngine));
+}
+

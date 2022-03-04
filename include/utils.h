@@ -511,22 +511,24 @@ const std::array<std::string, 500> useragents =
 	"Mozilla/5.0 (Phone; U; CPU like Mac OS X; en-gb) AppleWebKit/532+ (KHTML, like Gecko) Version/10.1 Mobile/1A538b Safari/419.3"
 };
 
-inline static std::string ChoseAPI(const std::vector<std::string> &apis)
+inline static std::string ChoseAPI(const std::vector<std::string> &apis) noexcept
 {
 	return apis[std::rand() % apis.size()];
 }
 
-inline static std::string ChoseUseragent()
+inline static std::string ChoseUseragent() noexcept
 {
 	return useragents[std::rand() % useragents.size()];
 }
 
-inline static void UpdateHeaders(std::map<std::string, std::string> &headers, const std::string &proxyIP)
+inline static void UpdateHeaders(std::map<std::string, std::string> &headers, const std::string &proxyIP) noexcept
 {
 	headers["User-Agent"] = ChoseUseragent();
 	headers["X-Forwarder-For"] = proxyIP;
 }
 
-std::string decodeURL(const std::string &stringToDecode);
+std::string decodeURL(const std::string &stringToDecode) noexcept;
+
+void FillWithRandom(std::vector<char> &bufferToFill) noexcept;
 
 #endif // UTILS_HPP

@@ -1,7 +1,10 @@
+#include <functional>
 #include <string>
 #include <vector>
 #include <atomic>
 
-void HTTPFire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop);
+using AttackerFunc = std::function<void(const std::vector<std::string> &, std::atomic<bool> &)>;
 
-void TCPFire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop);
+void HTTPFire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop) noexcept;
+
+void TCPFire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop) noexcept;

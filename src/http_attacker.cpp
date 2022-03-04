@@ -8,7 +8,7 @@
 #include "curl_wrapper.h"
 #include "utils.h"
 
-void HTTPFire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop)
+void HTTPFire(const std::vector<std::string> &apiList, std::atomic<bool> &shouldStop) noexcept
 {
 	CURLLoader wrapper;
 
