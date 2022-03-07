@@ -8,29 +8,12 @@
 
 using namespace Attackers;
 
-std::optional<Target> TCPGun::Aim(const CURI &uriToAttack) noexcept
+bool TCPGun::FireWithoutProxy() noexcept
 {
-	TCPWrapper tcpAttacker;
-	Informator informer;
-	informer.LoadNewData();
 
-	
-	for(size_t proxyTry = 0; 
-		proxyTry < AttackerConfig::TCPAttacker::PROXY_RETRIES; proxyTry++)
-	{
-		if(const auto proxies = informer.GetProxies())
-		{
-			if(auto resolvedAddress{tcpAttacker.CheckConnection(uriToAttack, *proxies)})
-			{
-				return *resolvedAddress;
-			}
-		}
-	}
-
-	return {};
 }
 
-void TCPGun::FireTillDead(const Target &targetToKill) noexcept
+void TCPGun::FireWithProxy() noexcept
 {
 	Informator informer;
 	while(!g_shouldStop.load() && !informer.LoadNewData())
@@ -62,4 +45,41 @@ void TCPGun::FireTillDead(const Target &targetToKill) noexcept
 		}
 		resolvedAddress = tcpAttacker.CheckConnection(CURI(currentTarget), *proxies);
 	}
+
+}
+
+bool TCPGun::SetValidProxy() noexcept
+{
+
+}
+
+std::optional<Proxy> TCPGun::ChoseProxy(const std::vector<Proxy> &proxies) noexcept
+{
+
+}
+
+std::optional<Target> TCPGun::Aim(const CURI &uriToAttack) noexcept
+{
+	TCPWrapper tcpAttacker;
+	Informator informer;
+	informer.LoadNewData();
+
+	for(size_t proxyTry = 0; 
+		proxyTry < AttackerConfig::TCPAttacker::PROXY_RETRIES; proxyTry++)
+	{
+		if(const auto proxies = informer.GetProxies())
+		{
+			if(auto resolvedAddress{tcpAttacker.CheckConnection(uriToAttack, *proxies)})
+			{
+				return *resolvedAddress;
+			}
+		}
+		informer.LoadNewData();
+	}
+
+	return {};
+}
+
+void TCPGun::FireTillDead(const Target &targetToKill) noexcept
+{
 }

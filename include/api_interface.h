@@ -25,18 +25,11 @@ public:
 	std::optional<std::string> GetTarget() const noexcept;
 	std::optional<AttackMethod> GetMethod() const noexcept;
 
-	inline bool IsValid() const noexcept
-	{
-		return m_isValid;
-	}
-
 private:
 	static void LoadResouces() noexcept;
 private:
-	bool m_isValid{false};
-
-	static std::vector<std::string> m_availableResources;
-	static std::once_flag m_loadResourcesFlag;
+	inline static std::vector<std::string> m_availableResources;
+	inline static std::once_flag m_loadResourcesFlag;
 
 	nlohmann::json m_data;
 };

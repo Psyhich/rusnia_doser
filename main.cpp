@@ -8,7 +8,7 @@
 #include "nlohmann/json.hpp"
 
 #include "config.h"
-#include "attacker.h"
+#include "solider.h"
 #include "curl_wrapper.h"
 #include "utils.h"
 #include "globals.h"
@@ -38,14 +38,14 @@ int main(int argc, char **argv)
 		}
 		catch(...)
 		{
-			
 		}
 	}
 
 	std::vector<std::thread> pool;
 	for(size_t i = 0; i < maxThreads; i++)
 	{
-		pool.push_back(std::thread(HTTPFire, apis, std::ref(g_shouldStop)));
+		Solider solider;
+		pool.push_back(std::thread(solider));
 	}
 
 	for(auto &thread : pool)

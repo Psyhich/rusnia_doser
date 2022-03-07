@@ -8,7 +8,7 @@ set(BUILD_SHARED_LIBS False)
 set(HEADERS
 	config/config.h
 	include/globals.h
-	include/attacker.h
+	include/solider.h
 	include/curl_wrapper.h
 	include/utils.h
 	include/response.hpp
@@ -22,6 +22,7 @@ set(HEADERS
 set(SOURCES
 	main.cpp
 	src/curl_wrapper.cpp
+	src/solider.cpp
 	src/utils.cpp
 	src/uri.cpp
 	src/tcp_wrapper.cpp

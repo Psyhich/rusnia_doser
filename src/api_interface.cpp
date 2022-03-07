@@ -3,6 +3,7 @@
 #include "api_interface.h"
 #include "config.h"
 #include "curl_wrapper.h"
+#include "nlohmann/json.hpp"
 #include "utils.h"
 
 void Informator::LoadResouces() noexcept
@@ -60,6 +61,10 @@ bool Informator::LoadNewData() noexcept
 	{
 		if(resp->m_code >= 200 && resp->m_code < 300)
 		{
+			if(resp->m_data.empty())
+			{
+				return false;
+			}
 			resp->m_data.push_back('\0');
 			try
 			{
@@ -79,7 +84,7 @@ bool Informator::LoadNewData() noexcept
 
 std::optional<std::vector<Proxy>> Informator::GetProxies() const noexcept
 {
-	if(!m_isValid || !m_data.contains("proxy"))
+	if(!m_data.contains("proxy"))
 	{
 		return {};
 	}

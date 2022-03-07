@@ -7,12 +7,15 @@
 namespace Attackers
 {
 
-class HTTPGun : IGun
+class HTTPGun : public IGun
 {
 public:
 	std::optional<Target> Aim(const CURI &uriToAttack) noexcept override;
 	void FireTillDead(const Target &targetToKill) noexcept override;
 private:
+	bool AttackWithNoProxy(const Target &targetToKill) noexcept;
+	void AttackWithProxy(const Target &targetToKill) noexcept;
+
 	bool SetValidProxy() noexcept;
 	std::optional<Proxy> ChoseProxy(const std::vector<Proxy> &proxies) noexcept;
 private:
