@@ -93,7 +93,7 @@ std::optional<Response> CURLLoader::Download(long timeout) noexcept
 	return Response(httpCode, std::move(readBuffer));
 }
 
-long CURLLoader::Ping(long timeout) noexcept
+std::optional<long> CURLLoader::Ping(long timeout) noexcept
 {
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEDATA, NULL);
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEFUNCTION, DoNothingCallback);

@@ -37,3 +37,24 @@ void FillWithRandom(std::vector<char> &bufferToFill) noexcept
 		std::ref(randomEngine));
 }
 
+std::string GetRandomIP() noexcept
+{
+	std::uniform_int_distribution<int> dist(0,255);
+	std::random_device rd;
+
+	std::string ipString{std::to_string(dist(rd))};
+	for(short i = 0; i < 4; i++)
+	{
+		ipString += '.';
+		ipString += std::to_string(dist(rd));
+	}
+
+	return ipString;
+}
+
+int GetRandomPort() noexcept
+{
+	std::uniform_int_distribution<int> dist(0, 65535);
+	std::random_device rd;
+	return dist(rd);
+}

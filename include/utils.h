@@ -531,4 +531,7 @@ std::string decodeURL(const std::string &stringToDecode) noexcept;
 
 void FillWithRandom(std::vector<char> &bufferToFill) noexcept;
 
+std::string GetRandomIP() noexcept;
+int GetRandomPort() noexcept;
+
 #endif // UTILS_HPP

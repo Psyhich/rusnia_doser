@@ -24,6 +24,8 @@ using PCURL = std::unique_ptr<CURL, CURLDeleter>;
 
 using Headers = std::map<std::string, std::string>;
 
+using Proxy = std::pair<std::string, std::string>;
+
 class CURLLoader
 {
 public:
@@ -40,8 +42,18 @@ public:
 	void SetHeaders(const Headers &headers) noexcept;
 
 	std::optional<Response> Download(long timeout=5) noexcept;
-	long Ping(long timeout=5) noexcept;
+	std::optional<long> Ping(long timeout=5) noexcept;
 
+	inline static const Headers BASE_HEADERS{
+			{"Content-Type", "*/*"},
+			{"Cf-Visitor", "https"},
+			{"Connection", "keep-alive"},
+			{"Accept", "application/json, text/plain, */*"},
+			{"Accept-Language", "ru"},
+			{"Accept-Encoding", "gzip, deflate, br"},
+			{"X-Forwarded-Proto", "https"},
+			{"Cache-Control", "no-store"}
+		};
 private:
 	static size_t DataCallback(void *contents, size_t size, size_t nmemb, void *userp) noexcept;
 	inline static size_t DoNothingCallback(void *, size_t, size_t size, void *) noexcept
