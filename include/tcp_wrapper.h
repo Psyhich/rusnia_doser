@@ -41,6 +41,7 @@ public:
 	~TCPWrapper() noexcept;
 
 	TCPStatus SendConnectPacket(const Attackers::Target &srcAddress, const Attackers::Target &destAddress) noexcept;
+
 	std::optional<Attackers::Target> CheckConnection(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept;
 
 	void SetTimeout(unsigned seconds) noexcept;

@@ -121,6 +121,10 @@ std::optional<Target> TCPWrapper::CheckConnection(const CURI &destAddress, const
 
 			std::string destIP = dest.address + ':' + std::to_string(dest.port);
 			checker.SetTarget(destIP);
+			if(checker.Ping())
+			{
+				return dest;
+			}
 			for(const auto &proxy : proxies)
 			{
 				UpdateHeaders(headers, proxy.first);

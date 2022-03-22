@@ -40,6 +40,8 @@ std::optional<Proxy> HTTPGun::ChoseProxy(const std::vector<Proxy> &proxies) noex
 bool HTTPGun::SetValidProxy() noexcept
 {
 	Informator informer;
+	size_t proxyTries{0};
+
 	while(!g_shouldStop.load())
 	{
 		if(!informer.LoadNewData())
@@ -53,6 +55,14 @@ bool HTTPGun::SetValidProxy() noexcept
 				m_currentProxy = std::move(proxy);
 				return true;
 			}
+			else
+			{
+				++proxyTries;
+			}
+		}
+		if(proxyTries == ProxyConfig::PROXY_TRIES)
+		{
+			break;
 		}
 	}
 	return false;
@@ -79,7 +89,7 @@ std::optional<Target> HTTPGun::Aim(const CURI &uriToAttack) noexcept
 			return {};
 		}
 	}
-
+	std::cout << "Failed to check host without proxy" << std::endl;
 	// Trying to aim with proxy
 	if(!SetValidProxy())
 	{
