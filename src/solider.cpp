@@ -22,7 +22,7 @@ void Solider::operator()() noexcept
 			continue;
 		}
 
-		std::cout << "Choosing method for" << *targetURI << std::endl;
+		std::cout << "Choosing method for: " << *targetURI << std::endl;
 		if(const auto method{informer.GetMethod()})
 		{
 			std::unique_ptr<Attackers::IGun> currentGun;
@@ -44,7 +44,6 @@ void Solider::operator()() noexcept
 				}
 			}
 
-			std::cout << "Gun loaded opening fire" << std::endl;
 			if(const auto target{currentGun->Aim(*targetURI)})
 			{
 				std::cout << "Got aim, firing" << std::endl;

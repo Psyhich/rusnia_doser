@@ -1,6 +1,7 @@
 #ifndef CURL_WRAPPER_HPP
 #define CURL_WRAPPER_HPP
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -42,24 +43,31 @@ public:
 	void SetHeaders(const Headers &headers) noexcept;
 
 	std::optional<Response> Download(long timeout=5) noexcept;
-	std::optional<long> Ping(long timeout=5) noexcept;
+	std::optional<long> Ping(long timeout=5, Headers* headers = nullptr) noexcept;
 
 	inline static const Headers BASE_HEADERS{
 			{"Content-Type", "*/*"},
-			{"Cf-Visitor", "https"},
 			{"Connection", "keep-alive"},
 			{"Accept", "application/json, text/plain, */*"},
 			{"Accept-Language", "ru"},
 			{"Accept-Encoding", "gzip, deflate, br"},
-			{"X-Forwarded-Proto", "https"},
 			{"Cache-Control", "no-store"}
 		};
 private:
 	static size_t DataCallback(void *contents, size_t size, size_t nmemb, void *userp) noexcept;
-	inline static size_t DoNothingCallback(void *, size_t, size_t size, void *) noexcept
+	static size_t DoNothingCallback(void *, size_t nmemb, size_t size, void *) noexcept
 	{
-		return size;
+		return size * nmemb;
 	}
+
+	static size_t ProcessHeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata);
+
+	static size_t DoNothingWithHeader(char *buffer, size_t size, size_t nitems, void *userdata) noexcept
+	{
+		return size * nitems;
+	}
+	
+	static void TrimString(std::string &strinToTrim);
 
 
 	inline static bool ProcessCode(CURLcode code) noexcept

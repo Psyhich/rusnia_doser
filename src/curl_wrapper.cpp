@@ -1,4 +1,6 @@
 #include "curl_wrapper.h"
+#include <algorithm>
+#include <cctype>
 
 CURLLoader::CURLLoader() noexcept
 {
@@ -24,13 +26,6 @@ void CURLLoader::SetTarget(const std::string &address) noexcept
 		return;
 	}
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_URL, address.c_str());
-
-	if(size_t pos = address.find("://");
-		pos != std::string::npos)
-	{
-		std::string scheme{address.begin(), address.begin() + pos};
-		curl_easy_setopt(m_curlEnv.get(), CURLOPT_PROXYTYPE, scheme.c_str());
-	}
 }
 
 void CURLLoader::SetProxy(const std::string &proxyIP, const std::string &proxyAuth) noexcept
@@ -40,7 +35,7 @@ void CURLLoader::SetProxy(const std::string &proxyIP, const std::string &proxyAu
 		return;
 	}
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_PROXY, proxyIP.c_str());
-	if(!proxyAuth.empty())
+	if(!proxyAuth.empty() || proxyAuth.size() >= 1)
 	{
 		curl_easy_setopt(m_curlEnv.get(), CURLOPT_PROXYUSERPWD, proxyAuth.c_str());
 	}
@@ -66,7 +61,7 @@ void CURLLoader::SetHeaders(const Headers &headers) noexcept
 	struct curl_slist *headers_list{NULL};
 	for(auto const &[key, value] : headers)
 	{
-		headers_list = curl_slist_append(headers_list, (key + value).c_str());
+		headers_list = curl_slist_append(headers_list, (key + ": " + value).c_str());
 	}
 
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPHEADER, headers_list);
@@ -82,6 +77,7 @@ std::optional<Response> CURLLoader::Download(long timeout) noexcept
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_CONNECTTIMEOUT, timeout);
 
 	CURLcode code = curl_easy_perform(m_curlEnv.get());
+
 	if(!ProcessCode(code))
 	{
 		return {};
@@ -93,14 +89,27 @@ std::optional<Response> CURLLoader::Download(long timeout) noexcept
 	return Response(httpCode, std::move(readBuffer));
 }
 
-std::optional<long> CURLLoader::Ping(long timeout) noexcept
+std::optional<long> CURLLoader::Ping(long timeout, Headers* headers) noexcept
 {
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_TIMEOUT, timeout);
+
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEDATA, NULL);
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEFUNCTION, DoNothingCallback);
 
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_TIMEOUT, timeout);
+	if(headers != nullptr)
+	{
+		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERFUNCTION, ProcessHeaderCallback);
+		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERDATA, headers);
+	}
 
 	CURLcode code = curl_easy_perform(m_curlEnv.get());
+
+	if(headers != nullptr)
+	{
+		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERFUNCTION, DoNothingWithHeader);
+		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERDATA, NULL);
+	}
+
 	if(!ProcessCode(code))
 	{
 		return {};
@@ -108,6 +117,7 @@ std::optional<long> CURLLoader::Ping(long timeout) noexcept
 	
 	long httpCode{0};
 	curl_easy_getinfo(m_curlEnv.get(), CURLINFO_RESPONSE_CODE, &httpCode);
+	std::cout << "\x1B[2J\x1B[H END PINGING WITH HEADERS" << std::endl;
 	return httpCode;
 }
 
@@ -122,6 +132,63 @@ size_t CURLLoader::DataCallback(void *contents, size_t size, size_t nmemb, void 
 		readBuffer.push_back(((char*)contents)[i]);
 	}
 
-	return nmemb;
+	return nmemb * size;
 }
 
+size_t CURLLoader::ProcessHeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata)
+{
+	char *currentChar = buffer;
+	const size_t headerSize = size * nitems;
+
+	std::string key;
+	std::string value;
+
+	size_t currentIndex{ 0 };
+	bool foundColon = false;
+
+	for(; currentIndex < headerSize; 
+		currentChar++, ++currentIndex)
+	{
+		if(*currentChar == ':')
+		{
+			foundColon = true;
+			break;
+		}
+		key.push_back(*currentChar);
+	}
+
+	if(!foundColon)
+	{
+		return headerSize;
+	}
+
+	++currentChar;
+	++currentIndex;
+
+	for(; currentIndex < headerSize; currentIndex++, currentChar++)
+	{
+		value.push_back(*currentChar);
+	}
+
+	TrimString(key);
+	std::transform(std::begin(key), std::end(key), std::begin(key), tolower);
+	key.shrink_to_fit();
+	
+	TrimString(value);
+	value.shrink_to_fit();
+
+	Headers &headers = *static_cast<Headers *>(userdata);
+	headers.emplace(std::move(key), std::move(value));
+
+	return size * nitems;
+}
+
+void CURLLoader::TrimString(std::string &stringToTrim)
+{
+	std::cout << "BEGUN PROCESSING TRIM" << std::endl;
+	const auto startOfString = std::find_if_not(std::begin(stringToTrim), std::end(stringToTrim), isspace);
+	const auto endOfString = std::find_if_not(std::rbegin(stringToTrim), std::rend(stringToTrim), isspace);
+
+	std::copy(startOfString, (endOfString + 1).base(), std::begin(stringToTrim));
+	std::cout << "END OF PROCESSING TRIM" << std::endl;
+}
