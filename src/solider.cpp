@@ -22,29 +22,11 @@ void Solider::operator()() noexcept
 			continue;
 		}
 
-		std::cout << "Choosing method for" << *targetURI << std::endl;
+		std::cout << "Choosing method for: " << *targetURI << std::endl;
 		if(const auto method{informer.GetMethod()})
 		{
-			std::unique_ptr<Attackers::IGun> currentGun;
-			switch(*method)
-			{
-				case Informator::AttackMethod::HTTPAttack:
-				{
-					currentGun.reset(new Attackers::HTTPGun());
-					break;
-				}
-				case Informator::AttackMethod::TCPAttack:
-				{
-					currentGun.reset(new Attackers::TCPGun());
-					break;
-				}
-				case Informator::AttackMethod::UDPAttack:
-				{
-					continue;
-				}
-			}
+			std::unique_ptr<Attackers::IGun> currentGun{new Attackers::TCPGun()};
 
-			std::cout << "Gun loaded opening fire" << std::endl;
 			if(const auto target{currentGun->Aim(*targetURI)})
 			{
 				std::cout << "Got aim, firing" << std::endl;

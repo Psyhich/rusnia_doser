@@ -525,6 +525,8 @@ inline static void UpdateHeaders(std::map<std::string, std::string> &headers, co
 {
 	headers["User-Agent"] = ChoseUseragent();
 	headers["X-Forwarder-For"] = proxyIP;
+	headers["Cf-Visitor"] = "https";
+	headers["X-Forwarded-Proto"]  = "https";
 }
 
 std::string decodeURL(const std::string &stringToDecode) noexcept;

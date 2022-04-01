@@ -8,27 +8,37 @@ set(BUILD_SHARED_LIBS False)
 set(HEADERS
 	config/config.h
 	include/globals.h
+
 	include/solider.h
+	include/api_interface.h
+
+	include/tcp_gun.h
+	include/http_gun.h
+
 	include/curl_wrapper.h
+	include/tcp_wrapper.h
+
 	include/utils.h
 	include/response.hpp
 	include/uri.h
-	include/tcp_wrapper.h
-	include/api_interface.h
-	include/tcp_gun.h
-	include/http_gun.h
+	include/net_utils.h
 )
 
 set(SOURCES
 	main.cpp
-	src/curl_wrapper.cpp
+
 	src/solider.cpp
+	src/api_interface.cpp
+
+	src/http_gun.cpp
+	src/tcp_gun.cpp
+
+	src/curl_wrapper.cpp
+	src/tcp_wrapper.cpp
+
 	src/utils.cpp
 	src/uri.cpp
-	src/tcp_wrapper.cpp
-	src/api_interface.cpp
-	src/tcp_gun.cpp
-	src/http_gun.cpp
+	src/net_utils.cpp
 )
 
 add_subdirectory(lib/curl)

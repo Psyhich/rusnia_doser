@@ -10,6 +10,7 @@
 #include "config.h"
 #include "solider.h"
 #include "curl_wrapper.h"
+#include "udp_wrapper.h"
 #include "utils.h"
 #include "globals.h"
 
@@ -21,14 +22,12 @@ void signalHanlder(int signum)
 
 int main(int argc, char **argv)
 {
-	signal(SIGHUP, signalHanlder);
 	signal(SIGTERM, signalHanlder);
-	signal(SIGABRT, signalHanlder);
-	signal(SIGINT, signalHanlder);
 
 	size_t maxThreads = 
 		std::thread::hardware_concurrency() == 0 ? 
 			2 : std::thread::hardware_concurrency();
+
 
 	if(argc >= 2)
 	{
@@ -45,7 +44,7 @@ int main(int argc, char **argv)
 	for(size_t i = 0; i < maxThreads; i++)
 	{
 		Solider solider;
-		pool.push_back(std::thread(solider));
+		pool.emplace_back(std::move(solider));
 	}
 
 	for(auto &thread : pool)

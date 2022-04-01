@@ -92,4 +92,7 @@ std::optional<Target> TCPGun::Aim(const CURI &uriToAttack) noexcept
 
 void TCPGun::FireTillDead(const Target &targetToKill) noexcept
 {
+	FireWithProxy(targetToKill);
+
+	FireWithoutProxy(targetToKill);
 }

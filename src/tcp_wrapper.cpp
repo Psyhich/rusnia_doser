@@ -23,36 +23,11 @@
 
 #include "tcp_wrapper.h"
 #include "curl_wrapper.h"
+#include "net_utils.h"
 #include "utils.h"
 
 using namespace Attackers;
 
-std::optional<TCPWrapper::CAddrInfo> TCPWrapper::GetHostAddresses(const CURI& cURIToGetAddress) noexcept
-{
-	if(const auto cAddress = cURIToGetAddress.GetPureAddress())
-	{
-		// Setting hint to look for host(protocol, socket type and IPv4)
-		addrinfo addressHint;
-		std::memset(&addressHint, 0, sizeof(addressHint));
-		addressHint.ai_family = AF_INET;
-		addressHint.ai_socktype = SOCK_STREAM;
-		addressHint.ai_protocol = 0;
-
-		const std::string csService = 
-			cURIToGetAddress.GetProtocol().value_or("");
-
-		// Creating pointer for array of resolved hosts(we would need only first one)
-		addrinfo *pResolvedHosts = nullptr;
-		if(getaddrinfo(cAddress->c_str(), csService.c_str(), &addressHint, &pResolvedHosts) != 0 || 
-			pResolvedHosts == nullptr)
-		{
-			fprintf(stderr, "Failed to resolve %s\n", cURIToGetAddress.GetFullURI().c_str());
-			return std::nullopt;
-		}
-		return CAddrInfo(pResolvedHosts);
-	}
-	return std::nullopt;
-}
 
 TCPWrapper::TCPWrapper() noexcept
 {
@@ -88,7 +63,7 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const Target &srcAddress, co
 		addr.sin_port = destAddress.port;
 		addr.sin_addr.s_addr = inet_addr(destAddress.address.c_str());
 
-		if(sendto(m_socketFD, packet->data(), IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
+		if(sendto(m_socketFD, packet->data(), NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
 			(struct sockaddr *) &addr, sizeof(addr)) < 0)
 		{
 			return TCPStatus::NeedConnectivityCheck;
@@ -102,7 +77,7 @@ std::optional<Target> TCPWrapper::CheckConnection(const CURI &destAddress, const
 {
 	CURLLoader checker;
 	std::optional<Target> foundAddress{std::nullopt};
-	if(const auto resolved = GetHostAddresses(destAddress))
+	if(const auto resolved = NetUtil::GetHostAddresses(destAddress))
 	{
 		Headers headers{CURLLoader::BASE_HEADERS};
 
@@ -142,18 +117,18 @@ std::optional<Target> TCPWrapper::CheckConnection(const CURI &destAddress, const
 	return foundAddress;
 }
 
-std::optional<TCPWrapper::IPTCPPacket> TCPWrapper::CreatePacket(const Target &srcAddress, const Target &destAddress) noexcept
+std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const Target &srcAddress, const Target &destAddress) noexcept
 {
 	// Headers for IP
 	struct ip ipHeader;
 	std::memset(&ipHeader, 0, sizeof(ipHeader));
-	ipHeader.ip_hl = IP_HEADER_LENGTH / sizeof (uint32_t);
+	ipHeader.ip_hl = NetUtil::IP_HEADER_LENGTH / sizeof (uint32_t);
 	// Internet Protocol version (4 bits): IPv4
 	ipHeader.ip_v = 4;
 	// Type of service (8 bits)
 	ipHeader.ip_tos = 0;
 	// Total length of datagram (16 bits): IP header + TCP header
-	ipHeader.ip_len = htons(IP_HEADER_LENGTH + TCP_HEADER_LENGTH);
+	ipHeader.ip_len = htons(NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH);
 	// ID sequence number (16 bits): unused, since single datagram
 	ipHeader.ip_id = htons (0);
 	// Time-to-Live (8 bits): default to maximum value
@@ -188,7 +163,7 @@ std::optional<TCPWrapper::IPTCPPacket> TCPWrapper::CreatePacket(const Target &sr
 
 	// IPv4 header checksum (16 bits): set to 0 when calculating checksum
 	ipHeader.ip_sum = 0;
-	ipHeader.ip_sum = GenerateIPChecksum((uint16_t *) &ipHeader, IP_HEADER_LENGTH);
+	ipHeader.ip_sum = NetUtil::GenerateIPChecksum((uint16_t *) &ipHeader, NetUtil::IP_HEADER_LENGTH);
 
 	// TCP header
 	struct tcphdr tcpHeader;
@@ -240,45 +215,16 @@ std::optional<TCPWrapper::IPTCPPacket> TCPWrapper::CreatePacket(const Target &sr
 	// TCP checksum (16 bits)
 	tcpHeader.th_sum = GenerateTCPChecksum(ipHeader, tcpHeader);
 
-	IPTCPPacket packet;
+	NetUtil::IPTCPPacket packet;
 	// Setting IPv4 hedaer to packet
-	std::memcpy(packet.data(), &ipHeader, IP_HEADER_LENGTH * sizeof (uint8_t));
+	std::memcpy(packet.data(), &ipHeader, NetUtil::IP_HEADER_LENGTH * sizeof (uint8_t));
 	// Setting TCP header
 	std::memcpy(
-		packet.data() + IP_HEADER_LENGTH,
+		packet.data() + NetUtil::IP_HEADER_LENGTH,
 		&tcpHeader,
 		TCP_HEADER_LENGTH * sizeof (uint8_t));
 
 	return packet;
-}
-std::uint16_t TCPWrapper::GenerateIPChecksum(uint16_t *addr, int len) noexcept
-{
-	int count = len;
-	uint32_t sum = 0;
-	uint16_t answer = 0;
-
-	// Sum up 2-byte values until none or only one byte left.
-	while (count > 1) {
-	sum += *(addr++);
-		count -= 2;
-	}
-
-	// Add left-over byte, if any.
-	if (count > 0) {
-		sum += *(uint8_t *) addr;
-	}
-
-	// Fold 32-bit sum into 16 bits; we lose information by doing this,
-	// increasing the chances of a collision.
-	// sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
-	while (sum >> 16) {
-		sum = (sum & 0xffff) + (sum >> 16);
-	}
-
-	// Checksum is one's compliment of sum.
-	answer = ~sum;
-
-	return answer;
 }
 
 std::uint16_t TCPWrapper::GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcphdr) noexcept
@@ -367,5 +313,5 @@ std::uint16_t TCPWrapper::GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcp
 	ptr += sizeof(tcphdr.th_urp);
 	chksumlen += sizeof(tcphdr.th_urp);
 
-	return GenerateIPChecksum((uint16_t *) buf, chksumlen);
+	return NetUtil::GenerateIPChecksum((uint16_t *) buf, chksumlen);
 }
