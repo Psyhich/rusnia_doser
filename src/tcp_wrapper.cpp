@@ -75,12 +75,8 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const Target &srcAddress, co
 
 std::optional<Target> TCPWrapper::CheckConnection(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept
 {
-	CURLLoader checker;
-	std::optional<Target> foundAddress{std::nullopt};
 	if(const auto resolved = NetUtil::GetHostAddresses(destAddress))
 	{
-		Headers headers{CURLLoader::BASE_HEADERS};
-
 		Target dest;
 		dest.port = htons(destAddress.GetPort().value_or(80));
 
@@ -94,27 +90,11 @@ std::optional<Target> TCPWrapper::CheckConnection(const CURI &destAddress, const
 				continue;
 			}
 
-			std::string destIP = dest.address + ':' + std::to_string(dest.port);
-			checker.SetTarget(destIP);
-			if(checker.Ping())
-			{
-				return dest;
-			}
-			for(const auto &proxy : proxies)
-			{
-				UpdateHeaders(headers, proxy.first);
-				checker.SetHeaders(headers);
-				checker.SetProxy(proxy.first, proxy.second);
-				// We don't need response code, only the fact that cURL suceeded to connect
-				if(checker.Ping())
-				{
-					return dest;
-				}
-			}
+			return dest;
 		}
 	}
 
-	return foundAddress;
+	return {};
 }
 
 std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const Target &srcAddress, const Target &destAddress) noexcept
@@ -151,12 +131,12 @@ std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const Target &srcAd
 						  +  ipFlags[3]);
 
 	int respCode = inet_pton(AF_INET, srcAddress.address.c_str(), &(ipHeader.ip_src));
-	if(respCode != -1)
+	if(respCode == -1)
 	{
 		return {};
 	}
-	respCode = inet_pton(AF_INET, destAddress.address.c_str(), &(ipHeader.ip_src));
-	if(respCode != -1)
+	respCode = inet_pton(AF_INET, destAddress.address.c_str(), &(ipHeader.ip_dst));
+	if(respCode == -1)
 	{
 		return {};
 	}

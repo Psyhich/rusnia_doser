@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 project(rusnia_doser VERSION 0.1 LANGUAGES CXX)
 
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(BUILD_SHARED_LIBS False)
 
 set(HEADERS
@@ -49,7 +50,6 @@ find_package(Threads REQUIRED)
 
 add_executable(rusnia_doser ${HEADERS} ${SOURCES})
 
-
 target_link_libraries(rusnia_doser
 	Threads::Threads
 	ssl
@@ -58,10 +58,11 @@ target_link_libraries(rusnia_doser
 )
 
 
-target_include_directories(rusnia_doser PRIVATE 
+target_include_directories(rusnia_doser PUBLIC 
 	${CURL_INCLUDE_DIRS}
 	include/
 	config/
+	lib/args-parser/
 )
 
 set_property(TARGET rusnia_doser PROPERTY 
@@ -73,9 +74,6 @@ set_property(TARGET rusnia_doser PROPERTY
 
 # For clangd analyzer
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-	set_target_properties(${PROJECT_NAME} 
-		PROPERTIES EXPORT_COMPILE_COMMANDS true)
-
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E create_symlink
 			${CMAKE_BINARY_DIR}/compile_commands.json
