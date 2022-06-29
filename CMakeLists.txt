@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 
 project(rusnia_doser VERSION 0.1 LANGUAGES CXX)
 
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(BUILD_SHARED_LIBS False)
 
@@ -45,6 +44,7 @@ set(SOURCES
 add_subdirectory(lib/curl)
 add_subdirectory(lib/openssl-cmake)
 add_subdirectory(lib/json)
+add_subdirectory(lib/spdlog)
 
 find_package(Threads REQUIRED)
 
@@ -54,6 +54,7 @@ target_link_libraries(rusnia_doser
 	Threads::Threads
 	ssl
 	libcurl
+	spdlog
 	nlohmann_json::nlohmann_json
 )
 

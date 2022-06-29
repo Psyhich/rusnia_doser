@@ -10,3 +10,6 @@
 [submodule "lib/args-parser"]
 	path = lib/args-parser
 	url = https://github.com/igormironchik/args-parser
+[submodule "lib/spdlog"]
+	path = lib/spdlog
+	url = https://github.com/gabime/spdlog/
