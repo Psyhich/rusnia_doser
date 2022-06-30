@@ -1,7 +1,9 @@
 #ifndef TCP_GUN_H
 #define TCP_GUN_H
 
+#include "tcp_wrapper.h"
 #include "curl_wrapper.h"
+
 #include "gun.h"
 
 namespace Attackers
@@ -19,11 +21,11 @@ public:
 	bool FireWithoutProxy(const Target &targetToKill) noexcept;
 	void FireWithProxy(const Target &targetToKill) noexcept;
 private:
+	bool ShootTarget(const Target &targetToKill);
 
-	bool SetValidProxy() noexcept;
-	std::optional<Proxy> ChoseProxy(const std::vector<Proxy> &proxies) noexcept;
 private:
 	std::optional<Proxy> m_currentProxy;
+	TCPWrapper m_attacker;
 };
 
 

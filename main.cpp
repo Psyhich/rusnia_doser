@@ -1,15 +1,14 @@
 #include <csignal>
 
-#include <iostream>
+#include <optional>
 #include <string>
 #include <thread>
 #include <chrono>
 #include <atomic>
 
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
 #include "args-parser/all.hpp"
 
+#include "logging.h"
 #include "api_interface.h"
 #include "config.h"
 #include "solider.h"
@@ -18,21 +17,15 @@
 static TaskController g_mainTask;
 
 using namespace Args;
-namespace spd = spdlog;
 
 void signalHanlder(int signum) 
 {
-	spd::get("console")->info("Stoping");
+	SPDLOG_INFO("Stopping");
 	g_mainTask.StopExecution();
 }
 
-int main(int argc, char **argv)
+bool SetupArgs(CmdLine &cmd)
 {
-	signal(SIGTERM, signalHanlder);
-	std::signal(SIGINT, signalHanlder);
-	std::signal(SIGHUP, signalHanlder);
-
-	CmdLine cmd(argc, argv);
 	try
 	{
 		cmd.addArgWithNameOnly("target", true, true, "Domain or IP of target")
@@ -44,10 +37,27 @@ int main(int argc, char **argv)
 	catch(const BaseException &x)
 	{
 		std::cerr << x.what() << ": " << x.desc() << std::endl;
-		return 0;
+		return false;
+	}
+	return true;
+}
+
+int main(int argc, char **argv)
+{
+	std::signal(SIGTERM, signalHanlder);
+	std::signal(SIGINT, signalHanlder);
+	std::signal(SIGHUP, signalHanlder);
+
+	CmdLine cmd{argc, argv};
+	if(!SetupArgs(cmd))
+	{
+		return -1;
 	}
 
-	auto console = spd::stdout_color_mt("console");
+	if(!SetupLogging())
+	{
+		return -1;
+	}
 
 	const std::string target = cmd.value("--target");
 	std::optional<int> port{std::nullopt};
@@ -59,7 +69,7 @@ int main(int argc, char **argv)
 		}
 		catch(...)
 		{
-			console->critical("Failed to parse port number");
+			SPDLOG_CRITICAL("Failed to parse port number");
 			return -1;
 		}
 	}
@@ -75,23 +85,23 @@ int main(int argc, char **argv)
 		attackMethod = Informator::AttackMethod::TCPAttack;
 		if(!port)
 		{
-			console->critical("TCP attack should have port!");
+			SPDLOG_CRITICAL("TCP attack should have port!");
 			return -1;
 		}
 	}
 	else if(methodString == "udp")
 	{
-		console->error("Not implemented yet");
+		SPDLOG_ERROR("Not implemented yet");
 		return -1;
 	}
 	else
 	{
-		console->error("Failed to parse: {} to known methods!", methodString);
+		SPDLOG_ERROR("Failed to parse: {} to known methods!", methodString);
 		return -1;
 	}
 
 
-	size_t maxThreads = 
+	size_t squadSize = 
 		std::thread::hardware_concurrency() == 0 ? 2 : std::thread::hardware_concurrency();
 
 	if(cmd.isDefined("--threads"))
@@ -99,22 +109,22 @@ int main(int argc, char **argv)
 		const std::string threadsString = cmd.value("--threads");
 		try
 		{
-			maxThreads = std::stoull(threadsString);
+			squadSize = std::stoull(threadsString);
 		}
 		catch(...)
 		{
-			console->error("Failed to parse {} to number", threadsString);
+			SPDLOG_ERROR("Failed to parse {} to number", threadsString);
 			return -1;
 		}
 	}
 
-	console->info("Beggining attack using {} method", methodString);
-	console->info("Dispathicng {} soliders", maxThreads);
+	SPDLOG_INFO("Beggining attack using {} method", methodString);
+	SPDLOG_INFO("Dispatching {} soliders", squadSize);
 
 	std::vector<Solider> squad;
-	squad.reserve(maxThreads);
+	squad.reserve(squadSize);
 
-	for(size_t i = 0; i < maxThreads; i++)
+	for(size_t i = 0; i < squadSize; i++)
 	{
 		squad.emplace_back(attackMethod, target, port.value_or(0))
 			.StartExecution();
@@ -127,6 +137,6 @@ int main(int argc, char **argv)
 		solider.StopExecution();
 	}
 
-	console->info("Succesfully stoped");
-	spd::drop_all();
+	SPDLOG_INFO("Attack finished");
+	spdlog::drop_all();
 }
