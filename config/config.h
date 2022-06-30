@@ -12,7 +12,7 @@ namespace AttackerConfig
 
 	namespace TCPAttacker
 	{
-		inline static constexpr const size_t TCP_ATTACKS_BEFORE_CHECK = 500;
+		inline static constexpr const size_t TCP_ATTACKS_BEFORE_CHECK = 100000;
 		inline static constexpr const size_t PROXY_RETRIES = 2;
 	}
 }

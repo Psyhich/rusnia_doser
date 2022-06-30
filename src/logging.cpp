@@ -2,6 +2,7 @@
 #include <memory>
 
 #include "logging.h"
+#include "spdlog/common.h"
 
 bool SetupLogging()
 {
@@ -9,7 +10,7 @@ bool SetupLogging()
 	{
 		consoleSink = 
 			std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-		consoleSink->set_level(spdlog::level::info);
+		consoleSink->set_level(spdlog::level::warn);
 		consoleSink->set_pattern("[ %D %T:%e ] [ %^%l%$ ] -> %v");
 
 		fileSink = 

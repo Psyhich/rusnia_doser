@@ -20,7 +20,7 @@ using namespace Args;
 
 void signalHanlder(int signum) 
 {
-	SPDLOG_INFO("Stopping");
+	SPDLOG_WARN("Stopping, please be patient");
 	g_mainTask.StopExecution();
 }
 
@@ -99,7 +99,6 @@ int main(int argc, char **argv)
 		SPDLOG_ERROR("Failed to parse: {} to known methods!", methodString);
 		return -1;
 	}
-
 
 	size_t squadSize = 
 		std::thread::hardware_concurrency() == 0 ? 2 : std::thread::hardware_concurrency();

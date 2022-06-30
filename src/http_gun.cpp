@@ -173,7 +173,6 @@ bool HTTPGun::AttackWithNoProxy(const Target &targetToKill) noexcept
 				SPDLOG_INFO("Target: {} is probably down, looking for others", targetToKill.address);
 				return false;
 			}
-			SPDLOG_INFO("Succesfully attacked {}", targetToKill.address);
 		}
 	}
 	SPDLOG_INFO("Attack without proxy finished");

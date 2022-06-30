@@ -117,7 +117,6 @@ std::optional<long> CURLLoader::Ping(long timeout, Headers* headers) noexcept
 	
 	long httpCode{0};
 	curl_easy_getinfo(m_curlEnv.get(), CURLINFO_RESPONSE_CODE, &httpCode);
-	std::cout << "\x1B[2J\x1B[H END PINGING WITH HEADERS" << std::endl;
 	return httpCode;
 }
 
