@@ -5,25 +5,6 @@ project(rusnia_doser VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(BUILD_SHARED_LIBS False)
 
-set(HEADERS
-	config/config.h
-	include/globals.h
-
-	include/solider.h
-	include/api_interface.h
-
-	include/tcp_gun.h
-	include/http_gun.h
-
-	include/curl_wrapper.h
-	include/tcp_wrapper.h
-
-	include/utils.h
-	include/response.hpp
-	include/uri.h
-	include/net_utils.h
-)
-
 set(SOURCES
 	main.cpp
 
@@ -48,7 +29,7 @@ add_subdirectory(lib/spdlog)
 
 find_package(Threads REQUIRED)
 
-add_executable(rusnia_doser ${HEADERS} ${SOURCES})
+add_executable(rusnia_doser ${SOURCES})
 
 target_link_libraries(rusnia_doser
 	Threads::Threads

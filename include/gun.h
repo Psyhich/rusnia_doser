@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "multithread.h"
 #include "uri.h"
 
 namespace Attackers
@@ -18,9 +19,13 @@ struct Target
 class IGun
 {
 public:
+	IGun(const TaskController &task) : m_currentTask{task}
+	{ }
+
 	virtual std::optional<Target> Aim(const CURI &uriToAttack) noexcept = 0;
 	virtual void FireTillDead(const Target &targetToKill) noexcept = 0;
-private:
+protected:
+	const TaskController &m_currentTask;
 };
 
 } // Attackers

