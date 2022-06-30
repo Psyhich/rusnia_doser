@@ -185,10 +185,8 @@ size_t CURLLoader::ProcessHeaderCallback(char *buffer, size_t size, size_t nitem
 
 void CURLLoader::TrimString(std::string &stringToTrim)
 {
-	std::cout << "BEGUN PROCESSING TRIM" << std::endl;
 	const auto startOfString = std::find_if_not(std::begin(stringToTrim), std::end(stringToTrim), isspace);
 	const auto endOfString = std::find_if_not(std::rbegin(stringToTrim), std::rend(stringToTrim), isspace);
 
 	std::copy(startOfString, (endOfString + 1).base(), std::begin(stringToTrim));
-	std::cout << "END OF PROCESSING TRIM" << std::endl;
 }

@@ -2,7 +2,7 @@
 #define GLOBALS_H
 
 #include <atomic>
+#include <iostream>
 
-inline static std::atomic<bool> g_shouldStop{false};
 
 #endif // GLOBALS_H

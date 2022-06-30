@@ -45,7 +45,8 @@ public:
 	std::optional<Response> Download(long timeout=5) noexcept;
 	std::optional<long> Ping(long timeout=5, Headers* headers = nullptr) noexcept;
 
-	inline static const Headers BASE_HEADERS{
+	inline static const Headers BASE_HEADERS
+		{
 			{"Content-Type", "*/*"},
 			{"Connection", "keep-alive"},
 			{"Accept", "application/json, text/plain, */*"},

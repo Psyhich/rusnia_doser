@@ -43,7 +43,7 @@ std::string GetRandomIP() noexcept
 	std::random_device rd;
 
 	std::string ipString{std::to_string(dist(rd))};
-	for(short i = 0; i < 4; i++)
+	for(short i = 0; i < 3; i++)
 	{
 		ipString += '.';
 		ipString += std::to_string(dist(rd));

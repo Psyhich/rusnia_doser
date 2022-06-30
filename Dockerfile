@@ -6,8 +6,8 @@ RUN git clone --recurse-submodules https://github.com/Psyhich/rusnia_doser.git &
     cd rusnia_doser && \
     mkdir build && \
     cd build && \
-    cmake .. && \
-    make
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build ./ -j 8
 
 FROM ubuntu:20.04  
 ENV DEBIAN_FRONTEND=noninteractive

