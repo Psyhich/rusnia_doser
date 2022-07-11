@@ -4,7 +4,9 @@
 #include "logging.h"
 #include "spdlog/common.h"
 
-bool SetupLogging()
+using namespace Setup;
+
+bool Setup::SetupLogging()
 {
 	try
 	{

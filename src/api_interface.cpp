@@ -1,19 +1,26 @@
+#include <algorithm>
 #include <iostream>
 
+#include "nlohmann/json.hpp"
+#include "spdlog/spdlog.h"
+
 #include "api_interface.h"
+
+#include "target.hpp"
+
 #include "config.h"
 #include "curl_wrapper.h"
-#include "nlohmann/json.hpp"
 #include "utils.h"
 
-void Informator::LoadResouces() noexcept
+void Informator::LoadResouces(const TaskController &task) noexcept
 {
 	nlohmann::json hostsData;
+
 	auto wrapper = CURLLoader();
 
 	// Getting hosts list
 	wrapper.SetTarget(AttackerConfig::APIS_LIST);
-	while(true)
+	while(!task.ShouldStop())
 	{
 		if(auto resp = wrapper.Download();
 			resp->m_code >= 200 && resp->m_code < 300)
@@ -24,15 +31,15 @@ void Informator::LoadResouces() noexcept
 			}
 			catch(...)
 			{
-				std::cerr << "Failed to parse hosts list" << std::endl;
+				SPDLOG_ERROR("Failed to parse hosts list");
 			}
 			break;
 		}
 		else
 		{
-			std::cerr << "Failed to load hosts list!" << std::endl;
+			SPDLOG_WARN("Failed to load hosts list!");
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
-			std::cerr << "Trying again to load hosts" << std::endl;
+			SPDLOG_WARN("Trying again to load hosts");
 		}
 	}
 
@@ -41,12 +48,7 @@ void Informator::LoadResouces() noexcept
 	{
 		m_availableResources.push_back(uri);
 	}
-	std::cout << "Succesfully got APIs" << std::endl;
-}
-
-Informator::Informator()
-{
-	std::call_once(m_loadResourcesFlag, LoadResouces);
+	SPDLOG_INFO("Succesfully got APIs");
 }
 
 bool Informator::LoadNewData() noexcept
@@ -56,7 +58,8 @@ bool Informator::LoadNewData() noexcept
 	CURLLoader apiDownloader;
 	apiDownloader.SetTarget(apiURI);
 
-	std::cout << "Loading API response from: " << apiURI << std::endl;
+	nlohmann::json data;
+	SPDLOG_INFO("Loading API response from: {}", apiURI);
 	if(auto resp = apiDownloader.Download())
 	{
 		if(resp->m_code >= 200 && resp->m_code < 300)
@@ -68,39 +71,52 @@ bool Informator::LoadNewData() noexcept
 			resp->m_data.push_back('\0');
 			try
 			{
-				m_data = nlohmann::json::parse(resp->m_data.data());
+				SPDLOG_INFO("Beggining parsing bytes to json object");
+				data = nlohmann::json::parse(resp->m_data.data());
+				SPDLOG_INFO("Finished parsing bytes to json object");
+
+				m_proxies = {};
+				m_target = {};
+				m_method = {};
+
+				SPDLOG_INFO("Parsing and validating json data");
+				ParseProxies(data);
+				ParseTarget(data);
+				ParseMethod(data);
+				SPDLOG_INFO("Finished parsing and validating json data");
+
 				return true;
 			}
 			catch(...)
 			{
-				std::cerr << "Failed to parse API:" << std::endl << resp->m_data.data() << std::endl;
+				SPDLOG_WARN("Failed to parse API");
+				SPDLOG_INFO("Invalid API: {}", resp->m_data.data());
 				return false;
 			}
 		}
 	}
-	std::cerr << "Failed to load API" << std::endl;
+
+	SPDLOG_ERROR("Failed to load API response");
 	return false;
 }
 
-std::optional<std::vector<Proxy>> Informator::GetProxies() const noexcept
+void Informator::ParseProxies(const nlohmann::json &jsonObject)
 {
-	if(!m_data.contains("proxy"))
-	{
-		return {};
-	}
-	
-	std::vector<Proxy> proxies;
-	proxies.reserve(m_data["proxy"].size());
+	m_proxies = std::vector<Proxy>();
+	m_proxies->reserve(jsonObject["proxy"].size());
 
 	std::pair<std::string, std::string> proxyVal;
-	for(auto proxy : m_data["proxy"])
+
+	for(auto proxy : jsonObject["proxy"])
 	{
 		if(!proxy.contains("ip"))
 		{
 			continue;
 		}
+
 		proxyVal.first = proxy["ip"];
-		for(auto iter = std::begin(proxyVal.first); iter != std::end(proxyVal.first); iter++)
+		for(auto iter = std::begin(proxyVal.first); 
+			iter != std::end(proxyVal.first); iter++)
 		{
 			if(*iter == '\r' || *iter == '\n')
 			{
@@ -111,7 +127,8 @@ std::optional<std::vector<Proxy>> Informator::GetProxies() const noexcept
 		if(proxy.contains("auth"))
 		{
 			proxyVal.second = proxy["auth"];
-			for(auto iter = std::begin(proxyVal.second); iter != std::end(proxyVal.second); iter++)
+			for(auto iter = std::begin(proxyVal.second); 
+				iter != std::end(proxyVal.second); iter++)
 			{
 				if(*iter == '\r' || *iter == '\n')
 				{
@@ -120,24 +137,47 @@ std::optional<std::vector<Proxy>> Informator::GetProxies() const noexcept
 			}
 		}
 
-		proxies.push_back(std::move(proxyVal));
+		m_proxies->emplace_back(std::move(proxyVal));
 	}
-
-	return proxies;
 }
 
-std::optional<std::string> Informator::GetTarget() const noexcept
+void Informator::ParseTarget(const nlohmann::json &jsonObject)
 {
-	
-	if(m_data.contains("site") && m_data["site"].contains("url"))
+	if(jsonObject.contains("site") && jsonObject["site"].contains("page") && jsonObject["site"].contains("port"))
 	{
-		return decodeURL(m_data["site"]["url"]);
+		m_target = DecodeURL(jsonObject["site"]["page"]);
+		int portNumber{0};
+		try
+		{
+			portNumber = jsonObject["site"]["port"].get<int>();
+		}
+		catch(...)
+		{
+			m_target = {};
+			return;
+		}
+		m_target->SetPort(portNumber);
 	}
-
-	return {};
 }
 
-std::optional<Informator::AttackMethod> Informator::GetMethod() const noexcept
+void Informator::ParseMethod(const nlohmann::json &jsonObject)
 {
-	return AttackMethod::HTTPAttack;
+	if(jsonObject.contains("site") && jsonObject["site"].contains("protocol"))
+	{
+		std::string methodString = jsonObject["site"]["protocol"];
+		std::transform(std::begin(methodString), 
+			std::end(methodString), std::begin(methodString), tolower);
+		if(methodString == "http" || methodString == "https")
+		{
+			m_method = Attackers::AttackMethod::HTTPAttack;
+		}
+		else if(methodString == "tcp")
+		{
+			m_method = Attackers::AttackMethod::TCPAttack;
+		}
+		else if(methodString == "udp")
+		{
+			m_method = Attackers::AttackMethod::UDPAttack;
+		}
+	}
 }

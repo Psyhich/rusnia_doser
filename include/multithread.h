@@ -28,7 +28,7 @@ public:
 		m_shouldStop.store(false, std::memory_order_release);
 	}
 private:
-	std::atomic<bool> m_shouldStop;
+	std::atomic<bool> m_shouldStop{true};
 };
 
 #endif // MULTITHREAD_H

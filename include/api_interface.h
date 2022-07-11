@@ -8,31 +8,52 @@
 
 #include "nlohmann/json.hpp"
 
+#include "curl_wrapper.h"
+#include "target.hpp"
+#include "multithread.h"
+
 class Informator
 {
 public:
-	enum class AttackMethod
+	Informator() = default;
+
+	inline static void ContactSources(const TaskController &task)
 	{
-		HTTPAttack,
-		TCPAttack,
-		UDPAttack
-	};
-	Informator();
-	
+		SPDLOG_INFO("Loading all available API hosts");
+		std::call_once(m_loadResourcesFlag, LoadResouces, std::cref(task));
+	}
+
 	bool LoadNewData() noexcept;
 
-	std::optional<std::vector<std::pair<std::string, std::string>>> GetProxies() const noexcept;
-	std::optional<std::string> GetTarget() const noexcept;
-	std::optional<AttackMethod> GetMethod() const noexcept;
+	inline std::optional<std::vector<Proxy>> GetProxies() const noexcept
+	{
+		return m_proxies;
+	}
+
+	inline std::optional<CURI> GetTarget() const noexcept
+	{
+		return m_target;
+	}
+
+	inline std::optional<Attackers::AttackMethod> GetMethod() const noexcept
+	{
+		return m_method;
+	}
 
 private:
-	static void LoadResouces() noexcept;
+	static void LoadResouces(const TaskController &task) noexcept;
+
+	void ParseProxies(const nlohmann::json &jsonObject);
+	void ParseTarget(const nlohmann::json &jsonObject);
+	void ParseMethod(const nlohmann::json &jsonObject);
+
 private:
 	inline static std::vector<std::string> m_availableResources;
 	inline static std::once_flag m_loadResourcesFlag;
 
-	nlohmann::json m_data;
+	std::optional<std::vector<Proxy>> m_proxies;
+	std::optional<CURI> m_target;
+	std::optional<Attackers::AttackMethod> m_method;
 };
-
 
 #endif // API_INTERFACE_H

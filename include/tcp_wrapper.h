@@ -11,9 +11,9 @@
 #include <optional>
 #include <memory>
 
-#include "gun.h"
 #include "curl_wrapper.h"
 #include "net_utils.h"
+#include "target.hpp"
 #include "uri.h"
 
 
@@ -30,14 +30,17 @@ public:
 	TCPWrapper() noexcept;
 	~TCPWrapper() noexcept;
 
-	TCPStatus SendConnectPacket(const Attackers::Target &srcAddress, const Attackers::Target &destAddress) noexcept;
+	TCPStatus SendConnectPacket(const CURI &srcAddress, 
+		const CURI &destAddress) noexcept;
 
-	std::optional<Attackers::Target> CheckConnection(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept;
+	std::optional<CURI> CheckConnection(const CURI &destAddress, 
+		const std::vector<Proxy> &proxies) noexcept;
 
 	void SetTimeout(unsigned seconds) noexcept;
 
 private:
-	std::optional<NetUtil::IPTCPPacket> CreatePacket(const Attackers::Target &srcAddress, const Attackers::Target &destAddress) noexcept;
+	std::optional<NetUtil::IPTCPPacket> CreatePacket(const CURI &srcAddress, 
+		const CURI &destAddress) noexcept;
 	std::uint16_t GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcphdr) noexcept;
 private:
 	inline static const int ON{1};

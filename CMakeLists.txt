@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.8)
 
-project(rusnia_doser VERSION 0.1 LANGUAGES CXX)
+project(rusnia_doser LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
-set(BUILD_SHARED_LIBS False)
+set(BUILD_SHARED_LIBS FALSE)
 
 set(SOURCES
 	main.cpp
+
+	src/logging.cpp
+	src/setup.cpp
 
 	src/solider.cpp
 	src/api_interface.cpp
@@ -17,10 +20,12 @@ set(SOURCES
 	src/curl_wrapper.cpp
 	src/tcp_wrapper.cpp
 
+	src/dynamic_target.cpp
+
 	src/utils.cpp
-	src/logging.cpp
-	src/uri.cpp
 	src/net_utils.cpp
+
+	src/uri.cpp
 )
 
 add_subdirectory(lib/curl)
@@ -40,12 +45,15 @@ target_link_libraries(rusnia_doser
 	nlohmann_json::nlohmann_json
 )
 
-
 target_include_directories(rusnia_doser PUBLIC 
 	${CURL_INCLUDE_DIRS}
 	include/
 	config/
 	lib/args-parser/
+)
+
+target_compile_options(rusnia_doser PRIVATE
+	"-Wall" "-Wextra" "-Wpedantic" "-Werror"
 )
 
 set_property(TARGET rusnia_doser PROPERTY 

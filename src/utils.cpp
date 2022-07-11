@@ -4,28 +4,38 @@
 
 #include "utils.h"
 
-
-std::string decodeURL(const std::string &stringToDecode) noexcept
+std::string DecodeURL(const std::string &stringToDecode) noexcept
 {
-	std::string ret;
-	char ch;
-	int i, ii;
+	std::string returnString;
+	returnString.reserve(stringToDecode.size());
 
-	for (i = 0; i < stringToDecode.length(); i++)
+	char parsedChar;
+	std::size_t index;
+	unsigned int valueToParse;
+
+	char buffer[3];
+	buffer[2] = '\0';
+
+	for (index = 0; index < stringToDecode.length(); index++)
 	{
-		if (int(stringToDecode[i]) == 37)
+		if (int(stringToDecode[index]) == 37)
 		{
-			sscanf(stringToDecode.substr(i + 1, 2).c_str(), "%x", &ii);
-			ch = static_cast<char>(ii);
-			ret += ch;
-			i += 2;
+			buffer[0] = stringToDecode[index + 1];
+			buffer[1] = stringToDecode[index + 2];
+
+			sscanf(buffer, "%x", &valueToParse);
+			parsedChar = static_cast<char>(valueToParse);
+			returnString += parsedChar;
+			index += 2;
 		}
 		else
 		{
-			ret += stringToDecode[i];
+			returnString.push_back(stringToDecode[index]);
 		}
 	}
-	return ret;
+
+	returnString.shrink_to_fit();
+	return returnString;
 }
 
 void FillWithRandom(std::vector<char> &bufferToFill) noexcept

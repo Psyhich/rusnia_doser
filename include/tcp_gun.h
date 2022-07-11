@@ -4,7 +4,7 @@
 #include "tcp_wrapper.h"
 #include "curl_wrapper.h"
 
-#include "gun.h"
+#include "gun.hpp"
 
 namespace Attackers
 {
@@ -15,13 +15,13 @@ public:
 	TCPGun(const TaskController &task) : IGun(task)
 	{ }
 
-	std::optional<Target> Aim(const CURI &uriToAttack) noexcept override;
-	void FireTillDead(const Target &targetToKill) noexcept override;
+	std::optional<CURI> Aim(const CURI &uriToAttack) noexcept override;
+	void FireTillDead(const CURI &targetToKill) noexcept override;
 
-	bool FireWithoutProxy(const Target &targetToKill) noexcept;
-	void FireWithProxy(const Target &targetToKill) noexcept;
+	bool FireWithoutProxy(const CURI &targetToKill) noexcept;
+	void FireWithProxy(const CURI &targetToKill) noexcept;
 private:
-	bool ShootTarget(const Target &targetToKill);
+	bool ShootTarget(const CURI &targetToKill);
 
 private:
 	std::optional<Proxy> m_currentProxy;

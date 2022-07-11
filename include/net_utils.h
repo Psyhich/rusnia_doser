@@ -6,30 +6,27 @@
 
 #include <optional>
 
-#include "gun.h"
 #include "uri.h"
 
 namespace NetUtil
 {
-
-struct SAddrInfoDeleter
-{
-	void operator()(addrinfo *pAddrInfo)
+	struct SAddrInfoDeleter
 	{
-		freeaddrinfo(pAddrInfo);
-	}
-};
+		void operator()(addrinfo *pAddrInfo)
+		{
+			freeaddrinfo(pAddrInfo);
+		}
+	};
 
-using CAddrInfo = std::unique_ptr<addrinfo[], SAddrInfoDeleter>;
+	using CAddrInfo = std::unique_ptr<addrinfo[], SAddrInfoDeleter>;
 
 
-std::optional<CAddrInfo> GetHostAddresses(const CURI& cURIToGetAddress) noexcept;
+	std::optional<CAddrInfo> GetHostAddresses(const CURI& cURIToGetAddress) noexcept;
 
-inline static constexpr const size_t IP_HEADER_LENGTH{20};
-using IPTCPPacket = std::array<char, IP_MAXPACKET>;
+	inline static constexpr const size_t IP_HEADER_LENGTH{20};
+	using IPTCPPacket = std::array<char, IP_MAXPACKET>;
 
-std::uint16_t GenerateIPChecksum(uint16_t *addr, int len) noexcept;
-
+	std::uint16_t GenerateIPChecksum(uint16_t *addr, int len) noexcept;
 } // NetUtil 
 
 #endif // NET_UTILS_H

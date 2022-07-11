@@ -7,13 +7,12 @@ namespace AttackerConfig
 {
 	inline static constexpr const char *APIS_LIST = "https://hutin-puy.nadom.app/hosts.json";
 	inline static constexpr const size_t FIRE_TIMEOUT_SECONDS = 5;
-	inline static constexpr const size_t DISCOVER_TIMEOUT_SECONDS = 30;
+	inline static constexpr const size_t DISCOVER_TIMEOUT_SECONDS = 15;
 	inline static constexpr const size_t MAX_ATTACK_ERRORS_COUNT = 10;
 
 	namespace TCPAttacker
 	{
 		inline static constexpr const size_t TCP_ATTACKS_BEFORE_CHECK = 100000;
-		inline static constexpr const size_t PROXY_RETRIES = 2;
 	}
 }
 

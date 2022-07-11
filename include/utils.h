@@ -529,7 +529,7 @@ inline static void UpdateHeaders(std::map<std::string, std::string> &headers, co
 	headers["X-Forwarded-Proto"]  = "https";
 }
 
-std::string decodeURL(const std::string &stringToDecode) noexcept;
+std::string DecodeURL(const std::string &stringToDecode) noexcept;
 
 void FillWithRandom(std::vector<char> &bufferToFill) noexcept;
 

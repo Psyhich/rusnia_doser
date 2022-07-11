@@ -63,7 +63,7 @@ private:
 
 	static size_t ProcessHeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata);
 
-	static size_t DoNothingWithHeader(char *buffer, size_t size, size_t nitems, void *userdata) noexcept
+	static size_t DoNothingWithHeader(char *, size_t size, size_t nitems, void *) noexcept
 	{
 		return size * nitems;
 	}

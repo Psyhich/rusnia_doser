@@ -7,22 +7,20 @@
 #include "api_interface.h"
 #include "http_gun.h"
 #include "multithread.h"
+#include "target.hpp"
 #include "tcp_gun.h"
 
 class Solider
 {
 public:
-	Solider(Informator::AttackMethod method, const std::string &target, int port=0) : 
-		m_method{method},
-		m_target{target},
-		m_port{port}
+	Solider(Attackers::PTarget &&target) : 
+		m_target{std::move(target)}
 	{}
 
 	Solider(const Solider &copy) : 
-		m_method{copy.m_method},
-		m_target{copy.m_target},
-		m_port{copy.m_port}
+		m_target{copy.m_target->Clone()}
 	{ }
+
 	Solider &operator=(const Solider &copy) 
 	{
 		if(&copy == this)
@@ -30,28 +28,23 @@ public:
 			return *this;
 		}
 
-		m_method = copy.m_method;
-		m_target = copy.m_target;
-		m_port = copy.m_port;
+		m_target = copy.m_target->Clone();
 
 		return *this;
 	}
 
-	Solider(const Solider &&move) : 
-		m_method{move.m_method},
-		m_target{std::move(move.m_target)},
-		m_port{move.m_port}
+	Solider(Solider &&move) : 
+		m_target{std::move(move.m_target)}
 	{ }
-	Solider &operator=(const Solider &&move) 
+
+	Solider &operator=(Solider &&move) 
 	{
 		if(&move == this)
 		{
 			return *this;
 		}
 
-		m_method = move.m_method;
 		m_target = std::move(move.m_target);
-		m_port = move.m_port;
 
 		return *this;
 	}
@@ -59,17 +52,17 @@ public:
 	inline void StartExecution()
 	{
 		m_task.StartExecution();
-		std::thread toBeSwapped{&ExecuteOrders, std::cref(m_task), 
-			m_method, Attackers::Target{m_target, m_port}};
-		m_runningOrders.swap(toBeSwapped);
+
+		std::thread toBeSwapped{&ExecuteOrders, std::cref(m_task), std::ref(*m_target)};
+		m_runningOrder.swap(toBeSwapped);
 	}
 
 	void StopExecution()
 	{
 		m_task.StopExecution();
-		if(m_runningOrders.joinable())
+		if(m_runningOrder.joinable())
 		{
-			m_runningOrders.join();
+			m_runningOrder.join();
 		}
 	}
 
@@ -79,16 +72,13 @@ public:
 	}
 
 private:
-	static void ExecuteOrders(const TaskController &task, 
-		Informator::AttackMethod method, Attackers::Target target);
+	static void ExecuteOrders(const TaskController &task, Attackers::Target &target);
 	
 private:
 	TaskController m_task;
-	std::thread m_runningOrders;
+	std::thread m_runningOrder;
 
-	Informator::AttackMethod m_method;
-	std::string m_target;
-	int m_port;
+	Attackers::PTarget m_target;
 };
 
 #endif // SOLIDER_H

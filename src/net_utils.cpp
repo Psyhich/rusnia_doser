@@ -3,7 +3,6 @@
 #include "net_utils.h"
 
 using namespace NetUtil;
-using namespace Attackers;
 
 std::optional<CAddrInfo> NetUtil::GetHostAddresses(const CURI& cURIToGetAddress) noexcept
 {

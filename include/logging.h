@@ -7,9 +7,12 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
-static std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> consoleSink;
-static std::shared_ptr<spdlog::sinks::basic_file_sink_mt> fileSink;
+namespace Setup
+{
+	static std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> consoleSink;
+	static std::shared_ptr<spdlog::sinks::basic_file_sink_mt> fileSink;
 
-bool SetupLogging();
+	bool SetupLogging();
+}
 
 #endif // LOGGING_H

