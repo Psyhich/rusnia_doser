@@ -1,17 +1,17 @@
-FROM ubuntu:20.04
-ENV DEBIAN_FRONTEND=noninteractive
+FROM debian:bookworm
 WORKDIR /app
-RUN apt-get update && apt-get install -y build-essential cmake git libssl-dev
+RUN export DEBIAN_FRONTEND=noninteractive && \
+	apt update && apt install -y build-essential cmake git python3-pip && \
+	python3 -m pip install conan
 RUN git clone --recurse-submodules https://github.com/Psyhich/rusnia_doser.git && \
-    cd rusnia_doser && \
-    mkdir build && \
+	cd rusnia_doser && \
+	mkdir build && \ 
     cd build && \
+	conan install ../ && \
     cmake .. -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build ./ -j 8
+    cmake --build ./ -j 8 -t rusnia_doser
 
-FROM ubuntu:20.04  
-ENV DEBIAN_FRONTEND=noninteractive
+FROM debian:bookworm
 WORKDIR /app
-RUN apt-get update && apt-get install -y openssl
-COPY --from=0 /app/rusnia_doser/build/rusnia_doser ./rusnia_doser
-CMD ["/app/rusnia_doser"]
+COPY --from=0 /app/build/bin/rusnia_doser ./rusnia_doser
+CMD ["/app/rusnia_doser", "--target", "auto", "--threads", "100"]

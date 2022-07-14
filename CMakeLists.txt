@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 
 project(rusnia_doser LANGUAGES CXX)
 
@@ -28,10 +28,12 @@ set(SOURCES
 	src/uri.cpp
 )
 
-add_subdirectory(lib/curl)
-add_subdirectory(lib/openssl-cmake)
 add_subdirectory(lib/json)
 add_subdirectory(lib/spdlog)
+
+# Including conan
+include("${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
+conan_basic_setup()
 
 find_package(Threads REQUIRED)
 
@@ -39,10 +41,9 @@ add_executable(rusnia_doser ${SOURCES})
 
 target_link_libraries(rusnia_doser
 	Threads::Threads
-	ssl
-	libcurl
 	spdlog
 	nlohmann_json::nlohmann_json
+	${CONAN_LIBS}
 )
 
 target_include_directories(rusnia_doser PUBLIC 
