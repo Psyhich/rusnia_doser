@@ -89,14 +89,14 @@ bool Informator::LoadNewData() noexcept
 			}
 			catch(...)
 			{
-				SPDLOG_WARN("Failed to parse API");
+				SPDLOG_WARN("Failed to parse API response from {}", apiURI);
 				SPDLOG_INFO("Invalid API: {}", resp->m_data.data());
 				return false;
 			}
 		}
 	}
 
-	SPDLOG_ERROR("Failed to load API response");
+	SPDLOG_INFO("Failed to load API response from {}", apiURI);
 	return false;
 }
 

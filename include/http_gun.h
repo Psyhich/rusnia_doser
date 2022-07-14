@@ -14,12 +14,11 @@ class HTTPGun : public IGun
 public:
 	HTTPGun(const TaskController &task) : IGun(task)
 	{}
-	std::optional<CURI> Aim(const CURI &uriToAttack) noexcept override;
-	void FireTillDead(const CURI &targetToKill) noexcept override;
+	std::size_t FireTillDead(const CURI &targetToKill) noexcept override;
 
 private:
-	bool AttackWithNoProxy(const CURI &targetToKill) noexcept;
-	void AttackWithProxy(const CURI &targetToKill) noexcept;
+	bool AttackWithNoProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
+	void AttackWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
 
 	bool SetValidProxy() noexcept;
 	std::optional<Proxy> ChoseProxy(const std::vector<Proxy> &proxies) noexcept;

@@ -31,7 +31,7 @@ Attackers::PTarget ProduceTarget(const Attackers::Tactic &tactic, const Args::Cm
 
 void signalHanlder(int) 
 {
-	g_mainTask.StopExecution();
+	g_mainTask.SendStop();
 }
 
 int main(int argc, char **argv)
@@ -90,7 +90,12 @@ int main(int argc, char **argv)
 
 	for(auto &solider : squad)
 	{
-		solider.StopExecution();
+		solider.SendStop();
+	}
+
+	for(auto &solider : squad)
+	{
+		solider.WaitTillEnd();
 	}
 
 	SPDLOG_INFO("Attack finished");

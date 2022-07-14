@@ -15,13 +15,12 @@ public:
 	TCPGun(const TaskController &task) : IGun(task)
 	{ }
 
-	std::optional<CURI> Aim(const CURI &uriToAttack) noexcept override;
-	void FireTillDead(const CURI &targetToKill) noexcept override;
+	std::size_t FireTillDead(const CURI &targetToKill) noexcept override;
 
-	bool FireWithoutProxy(const CURI &targetToKill) noexcept;
-	void FireWithProxy(const CURI &targetToKill) noexcept;
+	bool FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
+	void FireWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
 private:
-	bool ShootTarget(const CURI &targetToKill);
+	bool ShootTarget(const CURI &targetToKill, std::size_t &hitsCount);
 
 private:
 	std::optional<Proxy> m_currentProxy;

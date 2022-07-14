@@ -4,11 +4,8 @@
 #include <thread>
 
 #include "globals.h"
-#include "api_interface.h"
-#include "http_gun.h"
 #include "multithread.h"
 #include "target.hpp"
-#include "tcp_gun.h"
 
 class Solider
 {
@@ -51,22 +48,20 @@ public:
 
 	inline void StartExecution()
 	{
-		m_task.StartExecution();
-
-		std::thread toBeSwapped{&ExecuteOrders, std::cref(m_task), std::ref(*m_target)};
-		m_runningOrder.swap(toBeSwapped);
+		m_task.StartExecution(std::ref(ExecuteOrders), std::cref(m_task), std::ref(*m_target));
 	}
 
-	void StopExecution()
+	inline void SendStop()
 	{
-		m_task.StopExecution();
-		if(m_runningOrder.joinable())
-		{
-			m_runningOrder.join();
-		}
+		m_task.SendStop();
 	}
 
-	bool ShouldStop() const
+	inline void WaitTillEnd()
+	{
+		m_task.UtilizeTask();
+	}
+
+	inline bool ShouldStop() const
 	{
 		return m_task.ShouldStop();
 	}
@@ -76,7 +71,6 @@ private:
 	
 private:
 	TaskController m_task;
-	std::thread m_runningOrder;
 
 	Attackers::PTarget m_target;
 };

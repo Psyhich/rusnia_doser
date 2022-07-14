@@ -2,16 +2,21 @@
 
 #include "http_gun.h"
 #include "tcp_gun.h"
-#include "api_interface.h"
 #include "globals.h"
 
 void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &target)
 {
+	std::size_t hitsCount{0};
+
 	while(!task.ShouldStop())
 	{
 		if(target.NeedWeaponAim())
 		{
 			target.Retarget(task);
+			if(task.ShouldStop())
+			{
+				continue;
+			}
 		}
 
 		Attackers::AttackMethod method = target.GetAttackMethod();
@@ -19,7 +24,7 @@ void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &targe
 
 		Attackers::PGun gun;
 
-		switch (method)
+		switch(method)
 		{
 			case Attackers::AttackMethod::HTTPAttack:
 			{
@@ -40,8 +45,8 @@ void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &targe
 		}
 		if(gun)
 		{
-			gun->FireTillDead(coordinates);
+			hitsCount += gun->FireTillDead(coordinates);
 		}
 	}
-	SPDLOG_INFO("Stoping execution");
+	SPDLOG_INFO("Stoping execution with {} succesfull hits", hitsCount);
 }

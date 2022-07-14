@@ -22,18 +22,15 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 {
 	Attackers::Tactic attackTactic;
 
-	const CURI target = CURI{cmd.value("--target")};
-	if(target.GetFullURI() == "auto")
-	{
-		attackTactic.isAutoAim = true;
-	}
+	std::string cmdValue{cmd.value("--target")};
 
-	std::optional<int> port{target.GetPort()};
+	attackTactic.isAutoAim = cmdValue == "auto";
 
-	const auto method = target.GetProtocol();
 	if(!attackTactic.isAutoAim)
 	{
-		if(method)
+		attackTactic.coordintates = CURI{cmdValue};
+		
+		if(const auto method = attackTactic.coordintates.GetProtocol())
 		{
 			if(*method == "http" || *method == "https")
 			{
@@ -42,7 +39,7 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 			else if(*method == "tcp")
 			{
 				attackTactic.method = Attackers::AttackMethod::TCPAttack;
-				if(!port)
+				if(!attackTactic.coordintates.GetPort())
 				{
 					SPDLOG_CRITICAL("TCP attack should have port!");
 					return std::nullopt;

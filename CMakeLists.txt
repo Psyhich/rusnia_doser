@@ -26,6 +26,8 @@ set(SOURCES
 	src/net_utils.cpp
 
 	src/uri.cpp
+
+	src/multithread.cpp
 )
 
 add_subdirectory(lib/json)
