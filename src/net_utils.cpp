@@ -1,4 +1,5 @@
 #include <cstring>
+#include <iostream>
 
 #include "net_utils.h"
 
@@ -15,15 +16,12 @@ std::optional<CAddrInfo> NetUtil::GetHostAddresses(const CURI& cURIToGetAddress)
 		addressHint.ai_socktype = SOCK_STREAM;
 		addressHint.ai_protocol = 0;
 
-		const std::string csService = 
-			cURIToGetAddress.GetProtocol().value_or("");
-
 		// Creating pointer for array of resolved hosts(we would need only first one)
 		addrinfo *pResolvedHosts = nullptr;
-		if(getaddrinfo(cAddress->c_str(), csService.c_str(), &addressHint, &pResolvedHosts) != 0 || 
+		if(getaddrinfo(cAddress->c_str(), nullptr, &addressHint, &pResolvedHosts) != 0 || 
 			pResolvedHosts == nullptr)
 		{
-			fprintf(stderr, "Failed to resolve %s\n", cURIToGetAddress.GetFullURI().c_str());
+			SPDLOG_WARN("Failed to resolve {}", cURIToGetAddress);
 			return std::nullopt;
 		}
 		return CAddrInfo(pResolvedHosts);
