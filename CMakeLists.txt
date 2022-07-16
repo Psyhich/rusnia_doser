@@ -74,3 +74,5 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 			${CMAKE_SOURCE_DIR}/compile_commands.json
 	)
 endif()
+
+install(TARGETS rusnia_doser)

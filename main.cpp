@@ -6,8 +6,6 @@
 #include <chrono>
 #include <atomic>
 
-#include <args-parser/all.hpp>
-
 #include "logging.h"
 #include "setup.h"
 #include "solider.h"

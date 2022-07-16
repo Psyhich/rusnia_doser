@@ -1,8 +1,0 @@
-[requires]
-libcurl/7.84.0
-
-[generators]
-cmake
-
-[options]
-*:shared=False
