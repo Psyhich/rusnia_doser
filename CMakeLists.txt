@@ -16,9 +16,11 @@ set(SOURCES
 
 	src/http_gun.cpp
 	src/tcp_gun.cpp
+	src/udp_gun.cpp
 
 	src/curl_wrapper.cpp
 	src/tcp_wrapper.cpp
+	src/udp_wrapper.cpp
 
 	src/dynamic_target.cpp
 

@@ -7,7 +7,6 @@
 
 #include "api_interface.h"
 #include "tcp_wrapper.h"
-#include "globals.h"
 #include "config.h"
 #include "utils.h"
 
@@ -17,10 +16,10 @@ std::size_t TCPGun::FireTillDead(const CURI &targetToKill) noexcept
 {
 	std::size_t hitsCount{0};
 
-	SPDLOG_INFO("Firing at {} without proxy", targetToKill);
+	SPDLOG_INFO("Firing TCP at {} without proxy", targetToKill);
 	FireWithoutProxy(targetToKill, hitsCount);
 
-	SPDLOG_INFO("Firing at {} with proxy", targetToKill);
+	SPDLOG_INFO("Firing TCP at {} with proxy", targetToKill);
 	FireWithProxy(targetToKill, hitsCount);
 
 	return hitsCount;

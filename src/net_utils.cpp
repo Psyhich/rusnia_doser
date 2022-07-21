@@ -30,27 +30,30 @@ std::optional<CAddrInfo> NetUtil::GetHostAddresses(const CURI& cURIToGetAddress)
 }
 
 
-std::uint16_t NetUtil::GenerateIPChecksum(uint16_t *addr, int len) noexcept
+std::uint16_t NetUtil::GenerateIPChecksum(uint16_t *addr, int bytesCount) noexcept
 {
-	int count = len;
 	uint32_t sum = 0;
+	int count = bytesCount;
 	uint16_t answer = 0;
 
 	// Sum up 2-byte values until none or only one byte left.
-	while (count > 1) {
-	sum += *(addr++);
+	while (count > 1)
+	{
+		sum += *(addr++);
 		count -= 2;
 	}
 
 	// Add left-over byte, if any.
-	if (count > 0) {
+	if (count > 0)
+	{
 		sum += *(uint8_t *) addr;
 	}
 
 	// Fold 32-bit sum into 16 bits; we lose information by doing this,
 	// increasing the chances of a collision.
 	// sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
-	while (sum >> 16) {
+	while (sum >> 16)
+	{
 		sum = (sum & 0xffff) + (sum >> 16);
 	}
 

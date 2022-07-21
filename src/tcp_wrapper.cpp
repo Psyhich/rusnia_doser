@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
@@ -20,6 +19,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <string>
 
 #include "tcp_wrapper.h"
 #include "curl_wrapper.h"
@@ -28,7 +28,6 @@
 #include "utils.h"
 
 using namespace Attackers;
-
 
 TCPWrapper::TCPWrapper() noexcept
 {
@@ -95,7 +94,7 @@ std::optional<CURI> TCPWrapper::CheckConnection(const CURI &destAddress, const s
 
 			CURI destAddress{dest.first};
 			destAddress.SetPort(destAddress.GetPort().value_or(80));
-			
+
 			CURLLoader pinger;
 			Headers headers{CURLLoader::BASE_HEADERS};
 
@@ -127,7 +126,7 @@ std::optional<CURI> TCPWrapper::CheckConnection(const CURI &destAddress, const s
 	return {};
 }
 
-std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress) noexcept
+std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress) noexcept
 {
 	// Headers for IP
 	struct ip ipHeader;
@@ -225,7 +224,7 @@ std::optional<NetUtil::IPTCPPacket> TCPWrapper::CreatePacket(const CURI &srcAddr
 	// TCP checksum (16 bits)
 	tcpHeader.th_sum = GenerateTCPChecksum(ipHeader, tcpHeader);
 
-	NetUtil::IPTCPPacket packet;
+	NetUtil::IPPacket packet;
 	// Setting IPv4 hedaer to packet
 	std::memcpy(packet.data(), &ipHeader, NetUtil::IP_HEADER_LENGTH * sizeof (uint8_t));
 	// Setting TCP header

@@ -12,8 +12,6 @@
 #include "curl/curl.h"
 #include "response.hpp"
 
-inline static std::once_flag g_curlInitFlag;
-
 struct CURLDeleter
 {
 	void operator()(CURL *curlEnv) noexcept
@@ -77,6 +75,8 @@ private:
 	}
 private:
 	PCURL m_curlEnv;
+
+	inline static std::once_flag g_curlInitFlag;
 };
 
 #endif // CURL_WRAPPER_HPP

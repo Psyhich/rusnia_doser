@@ -3,7 +3,6 @@
 
 #include <thread>
 
-#include "globals.h"
 #include "multithread.h"
 #include "target.hpp"
 

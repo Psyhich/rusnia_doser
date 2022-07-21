@@ -39,7 +39,7 @@ public:
 	void SetTimeout(unsigned seconds) noexcept;
 
 private:
-	std::optional<NetUtil::IPTCPPacket> CreatePacket(const CURI &srcAddress, 
+	std::optional<NetUtil::IPPacket> CreatePacket(const CURI &srcAddress, 
 		const CURI &destAddress) noexcept;
 	std::uint16_t GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcphdr) noexcept;
 private:

@@ -47,8 +47,11 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 			}
 			else if(*method == "udp")
 			{
-				SPDLOG_ERROR("Not implemented yet");
-				return std::nullopt;
+				attackTactic.method = Attackers::AttackMethod::UDPAttack;
+				if(attackTactic.coordintates.GetPort())
+				{
+					SPDLOG_WARN("UDP attack don't need port, ignoring");
+				}
 			}
 			else
 			{

@@ -18,6 +18,7 @@ namespace Attackers
 	public:
 		IGun(const TaskController &task) : m_currentTask{task}
 		{ }
+		virtual ~IGun() {}
 
 		virtual std::size_t FireTillDead(const CURI &targetToKill) noexcept = 0;
 	protected:

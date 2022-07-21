@@ -6,7 +6,6 @@
 #include "target.hpp"
 #include "utils.h"
 #include "config.h"
-#include "globals.h"
 
 using namespace Attackers;
 
