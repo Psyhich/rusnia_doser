@@ -37,10 +37,13 @@ void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &targe
 				break;
 			}
 			case Attackers::AttackMethod::UDPAttack:
-			default:
 			{
 				gun = std::make_unique<Attackers::UDPGun>(task);
 				break;
+			}
+			default:
+			{
+				SPDLOG_ERROR("Got not supported attacker");
 			}
 		}
 		if(gun)
