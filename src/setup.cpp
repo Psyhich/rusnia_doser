@@ -1,6 +1,7 @@
 #include <thread>
 
 #include "setup.h"
+#include "spdlog/spdlog.h"
 
 bool Setup::SetupArgs(Args::CmdLine &cmd)
 {
@@ -12,7 +13,8 @@ bool Setup::SetupArgs(Args::CmdLine &cmd)
 	}
 	catch(const Args::BaseException &x)
 	{
-		std::cerr << x.what() << ": " << x.desc() << std::endl;
+		std::cerr << "Failed to parse program arguments. Reason: " << std::endl;
+		std::cerr << x.desc() << std::endl;
 		return false;
 	}
 	return true;
@@ -78,7 +80,7 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 		}
 		catch(...)
 		{
-			SPDLOG_ERROR("Failed to parse {} to number", threadsString);
+			SPDLOG_CRITICAL("Failed to parse {} to number of threads", threadsString);
 			return std::nullopt;
 		}
 	}

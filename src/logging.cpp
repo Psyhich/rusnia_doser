@@ -19,8 +19,6 @@ bool Setup::SetupLogging()
 			std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/log.log", true);
 		fileSink->set_level(spdlog::level::info);
 		fileSink->set_pattern("[ %t ] [ %D %T:%e ] [ %l ] %s:%# -> %v");
-		
-		spdlog::sinks_init_list sinks;
 
 		spdlog::set_default_logger(
 			std::make_shared<spdlog::logger>("main_logger", 

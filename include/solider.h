@@ -3,6 +3,7 @@
 
 #include <thread>
 
+#include "gun.hpp"
 #include "multithread.h"
 #include "target.hpp"
 
@@ -67,6 +68,8 @@ public:
 
 private:
 	static void ExecuteOrders(const TaskController &task, Attackers::Target &target);
+	static Attackers::PGun GunFactory(Attackers::AttackMethod attackMethod,
+		const TaskController &owningTask);
 	
 private:
 	TaskController m_task;

@@ -56,6 +56,7 @@ int main(int argc, char **argv)
 	}
 
 	g_mainTask.StartExecution();
+	// TODO: this can be made as repeating task
 	Informator::ContactSources(g_mainTask);
 
 	// Basic setup is done checking tactic and starting attack
@@ -66,13 +67,14 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		SPDLOG_INFO("Beggining attack using {} method", tactic->method);
+		SPDLOG_INFO("Beggining attack on {}", tactic->coordintates.GetFullURI());
 	}
 	SPDLOG_INFO("Dispatching {} soliders", tactic->squadSize);
 
-	const Attackers::PTarget target{ProduceTarget(*tactic, cmd)};
 
+	const Attackers::PTarget target{ProduceTarget(*tactic, cmd)};
 	std::vector<Solider> squad;
+
 	squad.reserve(tactic->squadSize);
 
 	for(size_t i = 0; i < tactic->squadSize; i++)

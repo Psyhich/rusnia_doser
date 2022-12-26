@@ -13,6 +13,8 @@ namespace Attackers
 	class IGun;
 	using PGun = std::unique_ptr<IGun>;
 
+	// TODO: can think of optimization with fixed array 
+	// for on stack allocation of new child of IGun
 	class IGun
 	{
 	public:

