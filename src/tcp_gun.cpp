@@ -71,8 +71,11 @@ bool TCPGun::ShootTarget(const CURI &targetToShoot, std::size_t &hitsCount)
 		fakeSource.SetPort(GetRandomPort());
 		TCPWrapper::TCPStatus sendStatus = m_attacker.SendConnectPacket(fakeSource, targetToShoot);
 
-		if(sendStatus == TCPWrapper::TCPStatus::NeedConnectivityCheck ||
-			sendStatus == TCPWrapper::TCPStatus::GotError)
+		if(sendStatus == TCPWrapper::TCPStatus::NeedConnectivityCheck)
+		{
+			SPDLOG_WARN("Connectivity issues");
+		}
+		if(sendStatus == TCPWrapper::TCPStatus::GotError)
 		{
 			hitsCount += count;
 			SPDLOG_WARN("Something went wrong durring sending packet");

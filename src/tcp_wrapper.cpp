@@ -53,6 +53,7 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const CURI &srcAddress, cons
 {
 	if(m_socketFD == -1)
 	{
+		SPDLOG_ERROR("Socket is not created");
 		return TCPStatus::GotError;
 	}
 
@@ -67,6 +68,7 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const CURI &srcAddress, cons
 		if(sendto(m_socketFD, packet->data(), NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
 			(struct sockaddr *) &addr, sizeof(addr)) < 0)
 		{
+			SPDLOG_INFO("Got error while sending package: {}", std::strerror(errno));
 			return TCPStatus::NeedConnectivityCheck;
 		}
 		return TCPStatus::Success;
