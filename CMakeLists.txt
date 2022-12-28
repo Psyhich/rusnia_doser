@@ -2,10 +2,15 @@ cmake_minimum_required(VERSION 3.20)
 
 project(rusnia_doser LANGUAGES CXX)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
-set(BUILD_SHARED_LIBS FALSE)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}/")
 
-set(SOURCES
+find_package(Threads REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(CURL REQUIRED)
+find_package(args-parser REQUIRED)
+
+add_executable(rusnia_doser 
 	main.cpp
 
 	src/logging.cpp
@@ -13,6 +18,8 @@ set(SOURCES
 
 	src/solider.cpp
 	src/api_interface.cpp
+
+	src/dynamic_target.cpp
 
 	src/http_gun.cpp
 	src/tcp_gun.cpp
@@ -22,50 +29,33 @@ set(SOURCES
 	src/tcp_wrapper.cpp
 	src/udp_wrapper.cpp
 
-	src/dynamic_target.cpp
-
 	src/utils.cpp
 	src/net_utils.cpp
-
+	src/proxy_checker.cpp
 	src/uri.cpp
-
 	src/multithread.cpp
 )
 
-add_subdirectory(lib/json)
-add_subdirectory(lib/spdlog)
-
-# Including conan
-include("${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
-conan_basic_setup()
-
-find_package(Threads REQUIRED)
-
-add_executable(rusnia_doser ${SOURCES})
-
 target_link_libraries(rusnia_doser
 	Threads::Threads
-	spdlog
+	spdlog::spdlog
 	nlohmann_json::nlohmann_json
-	${CONAN_LIBS}
+	CURL::libcurl
+	args-parser::args-parser
 )
 
 target_include_directories(rusnia_doser PUBLIC 
-	${CURL_INCLUDE_DIRS}
 	include/
 	config/
-	lib/args-parser/
 )
 
 target_compile_options(rusnia_doser PRIVATE
 	"-Wall" "-Wextra" "-Wpedantic" "-Werror"
 )
 
-set_property(TARGET rusnia_doser PROPERTY 
-	CXX_STANDARD 17)
-set_property(TARGET rusnia_doser PROPERTY 
-	CXX_STANDARD_REQUIRED ON)
-set_property(TARGET rusnia_doser PROPERTY 
+set_target_properties(rusnia_doser PROPERTIES
+	CXX_STANDARD 17
+	CXX_STANDARD_REQUIRED ON
 	CXX_COMPILE_FEATURES ON)
 
 # For clangd analyzer

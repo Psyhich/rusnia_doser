@@ -2,7 +2,8 @@
 #include <exception>
 #include <stdexcept>
 
-#include "spdlog/fmt/bundled/format.h"
+// #include "spdlog/fmt/bundled/format.h"
+#include "spdlog/fmt/fmt.h"
 
 #include "uri.h"
 
