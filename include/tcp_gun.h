@@ -18,12 +18,12 @@ public:
 		m_proxyGetter{proxyGetter}
 	{ }
 
-	std::size_t FireTillDead(const CURI &targetToKill) noexcept override;
+	std::size_t FireTillDead(const URI &targetToKill) noexcept override;
 
-	bool FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
-	void FireWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
+	bool FireWithoutProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
+	void FireWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
 private:
-	bool ShootTarget(const CURI &targetToKill, std::size_t &hitsCount);
+	bool ShootTarget(const URI &targetToKill, std::size_t &hitsCount);
 
 	bool LoadProxies();
 private:

@@ -1,253 +1,279 @@
+#include <cstdint>
+#include <cassert>
+
 #include <algorithm>
 #include <exception>
+#include <iterator>
+#include <limits>
+#include <optional>
 #include <stdexcept>
+#include <string>
+#include <variant>
 
 #include "spdlog/fmt/fmt.h"
 
 #include "uri.h"
 
-const std::string CURI::sProtocolSeparator{"://"};
-
-std::optional<std::string> CURI::ConstructFrom(const std::optional<std::string> &protocol, 
+std::string URI::ConstructFrom(const std::string &protocol, 
 	const std::string &address, const std::optional<int> &port, 
-	const std::optional<std::filesystem::path> &path, const std::optional<std::string> &query, 
-	const std::optional<std::string> &fragment)
+	const std::filesystem::path &path, const std::string &query, 
+	const std::string &fragment)
 {
-	if(address.size() == 0 && (!protocol || std::all_of(std::begin(*protocol), 
-		std::end(*protocol), CanBeUsedInProtocol)))
+	std::string constructedURI;
+	std::size_t URISizeToReserve{address.size()};
+
+	const bool protocolNotEmpty = !protocol.empty();
+	if(protocolNotEmpty)
 	{
-		return (protocol ? *protocol + "://" : "") + address +
-			(port ? ':' + std::to_string(*port) : "") +
-			(path ? path->string() : "") +
-			(query ? '?' + *query : "") +
-			(fragment ? '#' + *fragment : "");
+		URISizeToReserve += protocol.size() + 3;
 	}
-	return {};
+
+	std::optional<std::string> stringifiedPort{std::nullopt};
+	if(port.has_value())
+	{
+		stringifiedPort = std::to_string(*port);
+		URISizeToReserve += stringifiedPort->size() + 1;
+	}
+
+	const bool queryNotEmpty = !query.empty();
+	if(queryNotEmpty)
+	{
+		URISizeToReserve += protocol.size() + 1;
+	}
+
+	const bool pathNotEmpty = !path.empty();
+	if(pathNotEmpty)
+	{
+		URISizeToReserve += path.string().size() + (path.string()[0] == '/');
+	}
+
+	const bool fragmentNotEmpty = !fragment.empty();
+	if(fragmentNotEmpty)
+	{
+		URISizeToReserve += fragment.size() + 1;
+	}
+	constructedURI.reserve(URISizeToReserve);
+
+	constructedURI.append(protocol);
+	if(protocolNotEmpty)
+	{
+		constructedURI.append(PROTOCOL_SEPARATOR);
+	}
+	constructedURI.append(address);
+
+	if(pathNotEmpty && path.string()[0] != '/')
+	{
+		constructedURI.push_back('/');
+		constructedURI.append(path.string());
+	}
+	if(stringifiedPort)
+	{
+		constructedURI.push_back(':');
+		constructedURI.append(*stringifiedPort);
+	}
+	if(queryNotEmpty)
+	{
+		constructedURI.push_back('?');
+		constructedURI.append(query);
+	}
+	if(fragmentNotEmpty)
+	{
+		constructedURI.push_back('#');
+		constructedURI.append(fragment);
+	}
+
+	return constructedURI;
 }
 
-CURI::CURI(const std::string& cStringToSet) : m_originalString{cStringToSet}
+void URI::ParseProtocol(StringIter &parseStart, StringIter parseEnd, bool strictParse)
 {
-}
-
-std::optional<std::string> CURI::GetProtocol() const noexcept
-{
-	const std::size_t cnProtocolEnd = m_originalString.find(sProtocolSeparator);
-
-	if(cnProtocolEnd == std::string::npos ||
-		!std::all_of(m_originalString.begin(), m_originalString.begin() + cnProtocolEnd, 
-		CanBeUsedInProtocol))
+	const auto protocolEnd = std::search(parseStart, parseEnd,
+		begin(PROTOCOL_SEPARATOR), end(PROTOCOL_SEPARATOR));
+	if(protocolEnd == parseEnd)
 	{
-		return std::nullopt;
-	}
-
-	return m_originalString.substr(0, cnProtocolEnd);
-}
-
-bool CURI::SetProtocol(const std::string &protocol) noexcept
-{
-	auto newURI = ConstructFrom(protocol, *GetPureAddress(), 
-			GetPort(), GetPath(), GetQuery(), GetFragment());
-	if(newURI)
-	{
-		m_originalString = std::move(*newURI);
-	}
-	return newURI.has_value();
-}
-
-std::optional<std::string> CURI::GetPureAddress() const noexcept
-{
-	// We should take in mind protocol and port, ideally address can end with / ? #
-	// Checking for protocol start
-	auto addressStart = m_originalString.begin(); 
-	const std::size_t protocolStart{m_originalString.find(sProtocolSeparator)};
-	if(protocolStart != std::string::npos)
-	{
-		std::advance(addressStart, protocolStart + sProtocolSeparator.size());
-	}
-
-	// Checking for address end
-	auto addressEnd = std::find_first_of(addressStart, m_originalString.end(), 
-		POSSIBLE_ADDRESS_END.begin(), POSSIBLE_ADDRESS_END.end());
-
-	return std::string{addressStart, addressEnd};
-}
-bool CURI::SetPureAddress(const std::string &address) noexcept
-{
-	auto newURI = ConstructFrom(GetProtocol(), address, GetPort(), 
-		GetPath(), GetQuery(), GetFragment());
-	if(newURI)
-	{
-		m_originalString = std::move(*newURI);
-	}
-	return newURI.has_value();
-}
-
-std::optional<int> CURI::GetPort() const noexcept
-{
-	// Port specified between ':' and '#' '?' '/' chars
-	// Also we should omit protocol specifier ://
-	auto portStartPos = m_originalString.begin();
-	// Omiting ://
-	if(const std::size_t cnProtocolStart = m_originalString.find(sProtocolSeparator); 
-		cnProtocolStart != std::string::npos)
-	{
-		std::advance(portStartPos, cnProtocolStart + sProtocolSeparator.size());
-	}
-
-	// Looking for port start
-	portStartPos = std::find(portStartPos, m_originalString.end(), ':');
-
-	// If we didn't find port setting it to nullopt
-	if(portStartPos == m_originalString.end())
-	{
-		return std::nullopt;
-	}
-	// If we find port, skip ':'
-	++portStartPos;
-
-	// Now looking for port end
-	auto portEndPos = std::find_first_of(portStartPos, m_originalString.end(), 
-		POSSIBLE_PORT_END.begin(), POSSIBLE_PORT_END.end());
-
-	const std::string csStringPort{portStartPos, portEndPos};
-	// Checking if given port is valid
-	try {
-		std::size_t nLastParsedCharIndex{0};
-		const int ciParsedNumber = std::stoi(csStringPort.c_str(), &nLastParsedCharIndex);
-	
-		// This is largest port number
-		// For better safety checking if last parsed char is last in string, if not we have string like: "1234asd"
-		if(ciParsedNumber > 65535 || 
-			nLastParsedCharIndex != csStringPort.size()) 
+		if(strictParse)
 		{
-			return std::nullopt;
+			throw std::runtime_error("Strict parsing requires protocol");
 		}
-		return ciParsedNumber;
+		return;
 	}
-	// std::stoi can throw invalid_argument or out_of_range, 
-	// So catching any exceptions
-	catch(...)
+	if(!std::all_of(parseStart, protocolEnd, CanBeUsedInProtocol))
 	{
-		return std::nullopt;
+		throw std::runtime_error(fmt::format("Protocol {} string uses forbidden characters",
+			std::string{parseStart, protocolEnd}));
+	}
+	else
+	{
+		m_protocol = std::string{parseStart, protocolEnd};
+		if(m_protocol.empty() && strictParse)
+		{
+			throw std::runtime_error("Protocol is not allowed being empty in strict parsing");
+		}
+		parseStart = protocolEnd;
+		std::advance(parseStart, PROTOCOL_SEPARATOR.size());
 	}
 }
-bool CURI::SetPort(int port) noexcept
+
+void URI::ParseAddress(StringIter &parseStart, StringIter parseEnd, bool strictParse)
 {
-	auto newURI = ConstructFrom(GetProtocol(), *GetPureAddress(), 
-		port, GetPath(), GetQuery(), GetFragment());
-	if(newURI)
+	const auto hostEnd = std::find_first_of(parseStart, parseEnd, 
+		begin(POSSIBLE_ADDRESS_END), end(POSSIBLE_ADDRESS_END));
+	m_host = std::string{parseStart, hostEnd};
+
+	if(m_host.empty() && strictParse)
 	{
-		m_originalString = std::move(*newURI);
+		throw std::runtime_error("Host address cannot be empty in strict parsing");
 	}
-	return newURI.has_value();
+
+	parseStart = hostEnd;
+}
+void URI::ParsePort(StringIter &parseStart, StringIter parseEnd, bool strictParse)
+{
+	if(*parseStart == ':')
+	{
+		std::advance(parseStart, 1);
+		const auto portEnd = std::find_first_of(parseStart, parseEnd,
+			begin(POSSIBLE_PORT_END), end(POSSIBLE_PORT_END));
+
+		if(strictParse &&
+			std::distance(parseStart, portEnd) == 0)
+		{
+			throw std::runtime_error("Port colon char exists but no port specified in strict parsing");
+		}
+		const std::string portString{parseStart, portEnd};
+		const int parsedPort = std::stoi(portString);
+		if(parsedPort > std::numeric_limits<std::uint16_t>::max())
+		{
+			throw std::runtime_error("Port exceeds max allowed port number in strict parsing");
+		}
+		m_port = parsedPort;
+
+		std::advance(parseStart, portString.size());
+	}
+}
+
+void URI::ParsePath(StringIter &parseStart, StringIter parseEnd, bool)
+{
+	if(*parseStart == '/')
+	{
+		const auto pathStart = parseStart;
+		std::advance(parseStart, 1);
+		const auto pathEnd = std::find_first_of(parseStart, parseEnd,
+			begin(POSSIBLE_PATH_END), end(POSSIBLE_PATH_END));
+
+		m_path = std::string{pathStart, pathEnd};
+		parseStart = pathEnd;
+	}
+}
+
+void URI::ParseQuery(StringIter &parseStart, StringIter parseEnd, bool strictParse)
+{
+	if(*parseStart == '?')
+	{
+		std::advance(parseStart, 1);
+
+		const auto queryEnd = std::find(parseStart, parseEnd, '#');
+		if(strictParse &&
+			std::distance(parseStart, queryEnd) == 0)
+		{
+			throw std::runtime_error("Query character specified but no query provided in strict parsing");
+		}
+		m_query = std::string{parseStart, queryEnd};
+		parseStart = queryEnd;
+	}
+}
+
+void URI::ParseFragment(StringIter &parseStart, StringIter parseEnd, bool strictParse)
+{
+	if(*parseStart == '#')
+	{
+		std::advance(parseStart, 1);
+
+		if(strictParse &&
+			std::distance(parseStart, parseEnd))
+		{
+			throw std::runtime_error("Fragment character specified but no fragment provided in strict parsing");
+		}
+		m_fragment = std::string{parseStart, parseEnd};
+		parseStart = parseEnd;
+	}
+}
+
+URI::URI(const std::string& stringToSet, bool strictParse)
+{
+	auto parsingStart = begin(stringToSet);
+	const auto stringEnd = end(stringToSet);
+
+	ParseProtocol(parsingStart, stringEnd, strictParse);
+	ParseAddress(parsingStart, stringEnd, strictParse);
+	ParsePort(parsingStart, stringEnd, strictParse);
+	ParsePath(parsingStart, stringEnd, strictParse);
+	ParseQuery(parsingStart, stringEnd, strictParse);
+	ParseFragment(parsingStart, stringEnd, strictParse);
+}
+
+std::string URI::GetProtocol() const noexcept
+{
+	return m_protocol;
+}
+
+void URI::SetProtocol(const std::string &protocol)
+{
+	m_protocol = protocol;
+
+}
+
+std::string URI::GetPureAddress() const noexcept
+{
+	return m_host;
+}
+void URI::SetPureAddress(const std::string &address)
+{
+	m_host = address;
+}
+
+std::optional<int> URI::GetPort() const noexcept
+{
+	return m_port;
+}
+void URI::SetPort(std::optional<int> port)
+{
+	m_port = port;
 }
 
 
-std::optional<std::filesystem::path> CURI::GetPath() const noexcept
+std::filesystem::path URI::GetPath() const noexcept
 {
-	auto pathStartPos = m_originalString.begin();
-	// Omiting ://
-	if(const std::size_t cnProtocolStart = m_originalString.find(sProtocolSeparator); 
-		cnProtocolStart != std::string::npos)
-	{
-		std::advance(pathStartPos, cnProtocolStart + sProtocolSeparator.size());
-	}
-
-	// Checking for path start
-	pathStartPos = std::find(pathStartPos, m_originalString.end(), '/');
-	if(pathStartPos == m_originalString.end())
-	{
-		return std::nullopt;
-	}
-	
-	auto pathEndPos = std::find_first_of(pathStartPos, m_originalString.end(), 
-		POSSIBLE_PATH_END.begin(), POSSIBLE_PATH_END.end());
-
-	// taking in mind zero path(proto://some.page.com/)
-	if(std::distance(pathStartPos, pathEndPos) <= 1)
-	{
-		return std::nullopt;
-	}
-
-	return std::filesystem::path(std::string{pathStartPos, pathEndPos});
+	return m_path;
 }
-bool CURI::SetPath(const std::filesystem::path &path) noexcept
+void URI::SetPath(const std::filesystem::path &path)
 {
-	auto newURI = ConstructFrom(GetProtocol(), *GetPureAddress(), GetPort(), 
-		path, GetQuery(), GetFragment());
-	if(newURI)
-	{
-		m_originalString = std::move(*newURI);
-	}
-	return newURI.has_value();
+	m_path = path;
 }
 
-std::optional<std::string> CURI::GetQuery() const noexcept
+std::string URI::GetQuery() const noexcept
 {
-	auto queryStart = std::find(m_originalString.begin(), m_originalString.end(), '?');
-
-	if(queryStart == m_originalString.end())
-	{
-		return std::nullopt;
-	}
-	//
-	// Skipping '?'
-	++queryStart;
-
-	auto queryEnd = std::find(queryStart, m_originalString.end(), '#');
-
-	// Checking if it's not empty
-	if(std::distance(queryStart, queryEnd) == 0)
-	{
-		return std::nullopt;
-	}
-
-	return std::string{queryStart, queryEnd};
+	return m_query;
 }
-bool CURI::SetQuery(const std::string &query) noexcept
+void URI::SetQuery(const std::string &query)
 {
-	auto newURI = ConstructFrom(GetProtocol(), *GetPureAddress(), GetPort(), 
-		GetPath(), query, GetFragment());
-	if(newURI)
-	{
-		m_originalString = std::move(*newURI);
-	}
-	return newURI.has_value();
+	m_query = query;
 }
 
-std::optional<std::string> CURI::GetFragment() const noexcept
+std::string URI::GetFragment() const noexcept
 {
-	auto fragmentStart = std::find(m_originalString.begin(), m_originalString.end(), '#');
-
-	if(fragmentStart == m_originalString.end())
-	{
-		return std::nullopt;
-	}
-	// Skipping '#'
-	++fragmentStart;
-
-	if(std::distance(fragmentStart, m_originalString.end()) == 0)
-	{
-		return std::nullopt;
-	}
-	return std::string{fragmentStart, m_originalString.end()};
+	return m_fragment;
 }
-bool CURI::SetFragment(const std::string &fragment) noexcept
+void URI::SetFragment(const std::string &fragment)
 {
-	auto newURI = ConstructFrom(GetProtocol(), *GetPureAddress(), GetPort(), 
-		GetPath(), GetQuery(), fragment);
-	if(newURI)
-	{
-		m_originalString = std::move(*newURI);
-	}
-	return newURI.has_value();
+	m_fragment = fragment;
 }
 
-bool operator<(const CURI& cLURIToCompare, const CURI &cRURIToCompare) noexcept
+bool operator<(const URI& cLURIToCompare, const URI &cRURIToCompare) noexcept
 {
-	return cLURIToCompare.m_originalString < cRURIToCompare.m_originalString;
+	return cLURIToCompare.GetFullURI() < cRURIToCompare.GetFullURI();
 }
-bool operator==(const CURI& cLURIToCompare, const CURI &cRURIToCompare) noexcept
+bool operator==(const URI& cLURIToCompare, const URI &cRURIToCompare) noexcept
 {
-	return cLURIToCompare.m_originalString == cRURIToCompare.m_originalString;
+	return cLURIToCompare.GetFullURI() == cRURIToCompare.GetFullURI();
 }

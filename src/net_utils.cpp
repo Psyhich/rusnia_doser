@@ -1,13 +1,16 @@
 #include <cstring>
 #include <iostream>
 
+#include <spdlog/spdlog.h>
+
 #include "net_utils.h"
 
 using namespace NetUtil;
 
-std::optional<CAddrInfo> NetUtil::GetHostAddresses(const CURI& cURIToGetAddress) noexcept
+std::optional<CAddrInfo> NetUtil::GetHostAddresses(const URI& cURIToGetAddress) noexcept
 {
-	if(const auto cAddress = cURIToGetAddress.GetPureAddress())
+	const auto address = cURIToGetAddress.GetPureAddress();
+	if(!address.empty())
 	{
 		// Setting hint to look for host(protocol, socket type and IPv4)
 		addrinfo addressHint;
@@ -18,7 +21,7 @@ std::optional<CAddrInfo> NetUtil::GetHostAddresses(const CURI& cURIToGetAddress)
 
 		// Creating pointer for array of resolved hosts(we would need only first one)
 		addrinfo *pResolvedHosts = nullptr;
-		if(getaddrinfo(cAddress->c_str(), nullptr, &addressHint, &pResolvedHosts) != 0 || 
+		if(getaddrinfo(address.c_str(), nullptr, &addressHint, &pResolvedHosts) != 0 || 
 			pResolvedHosts == nullptr)
 		{
 			SPDLOG_WARN("Failed to resolve {}", cURIToGetAddress);

@@ -8,7 +8,7 @@ namespace Attackers
 	class StaticTarget : public Target
 	{
 	public:
-		StaticTarget(const CURI &coords, AttackMethod method) :
+		StaticTarget(const URI &coords, AttackMethod method) :
 			Target{false, coords, method}
 		{ }
 

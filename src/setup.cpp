@@ -26,15 +26,16 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 
 	std::string cmdValue{cmd.value("--target")};
 
-	attackTactic.coordintates = CURI{cmdValue};
+	attackTactic.coordintates = URI{cmdValue};
 	
-	if(const auto method = attackTactic.coordintates.GetProtocol())
+	const auto method = attackTactic.coordintates.GetProtocol();
+	if(!method.empty())
 	{
-		if(*method == "http" || *method == "https")
+		if(method == "http" || method == "https")
 		{
 			attackTactic.method = Attackers::AttackMethod::HTTPAttack;
 		}
-		else if(*method == "tcp")
+		else if(method == "tcp")
 		{
 			attackTactic.method = Attackers::AttackMethod::TCPAttack;
 			if(!attackTactic.coordintates.GetPort())
@@ -43,7 +44,7 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 				return std::nullopt;
 			}
 		}
-		else if(*method == "udp")
+		else if(method == "udp")
 		{
 			attackTactic.method = Attackers::AttackMethod::UDPAttack;
 			if(attackTactic.coordintates.GetPort())
@@ -53,7 +54,7 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 		}
 		else
 		{
-			SPDLOG_ERROR("Failed to parse: {} to known methods!", *method);
+			SPDLOG_ERROR("Failed to parse: {} to known methods!", method);
 			return std::nullopt;
 		}
 	}

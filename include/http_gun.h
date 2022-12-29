@@ -27,13 +27,13 @@ public:
 		IGun(task),
 		m_proxyGetter{proxyGetter}
 	{}
-	std::size_t FireTillDead(const CURI &targetToKill) noexcept override;
+	std::size_t FireTillDead(const URI &targetToKill) noexcept override;
 
 private:
 	TargetStatus FireGun();
 
-	bool AttackWithNoProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
-	void AttackWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept;
+	bool AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
+	void AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
 
 	bool LoadProxies();
 

@@ -49,7 +49,7 @@ TCPWrapper::~TCPWrapper() noexcept
 	}
 }
 
-TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const CURI &srcAddress, const CURI &destAddress) noexcept
+TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const URI &srcAddress, const URI &destAddress) noexcept
 {
 	if(m_socketFD == -1)
 	{
@@ -63,7 +63,7 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const CURI &srcAddress, cons
 		std::memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(destAddress.GetPort().value_or(80));
-		addr.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress()->c_str());
+		addr.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress().c_str());
 
 		if(sendto(m_socketFD, packet->data(), NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
 			(struct sockaddr *) &addr, sizeof(addr)) < 0)
@@ -77,7 +77,7 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const CURI &srcAddress, cons
 	return TCPStatus::GotError;
 }
 
-std::optional<CURI> TCPWrapper::TryResolveAddress(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept
+std::optional<URI> TCPWrapper::TryResolveAddress(const URI &destAddress, const std::vector<Proxy> &proxies) noexcept
 {
 	if(const auto resolved = NetUtil::GetHostAddresses(destAddress))
 	{
@@ -94,7 +94,7 @@ std::optional<CURI> TCPWrapper::TryResolveAddress(const CURI &destAddress, const
 				continue;
 			}
 			dest.first.erase(dest.first.find('\0'));
-			CURI destAddress{dest.first};
+			URI destAddress{dest.first};
 			destAddress.SetPort(destAddress.GetPort().value_or(80));
 
 			CURLLoader pinger;
@@ -128,7 +128,7 @@ std::optional<CURI> TCPWrapper::TryResolveAddress(const CURI &destAddress, const
 	return {};
 }
 
-std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress) noexcept
+std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const URI &srcAddress, const URI &destAddress) noexcept
 {
 	// Headers for IP
 	struct ip ipHeader;
@@ -161,12 +161,12 @@ std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const CURI &srcAddress
 						  + (ipFlags[2] << 13)
 						  +  ipFlags[3]);
 
-	int respCode = inet_pton(AF_INET, srcAddress.GetPureAddress()->c_str(), &(ipHeader.ip_src));
+	int respCode = inet_pton(AF_INET, srcAddress.GetPureAddress().c_str(), &(ipHeader.ip_src));
 	if(respCode == -1)
 	{
 		return {};
 	}
-	respCode = inet_pton(AF_INET, destAddress.GetPureAddress()->c_str(), &(ipHeader.ip_dst));
+	respCode = inet_pton(AF_INET, destAddress.GetPureAddress().c_str(), &(ipHeader.ip_dst));
 	if(respCode == -1)
 	{
 		return {};

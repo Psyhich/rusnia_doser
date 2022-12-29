@@ -18,7 +18,7 @@ namespace Attackers
 	struct Tactic
 	{
 		AttackMethod method;
-		CURI coordintates{""};
+		URI coordintates{""};
 		std::size_t squadSize;
 	};
 
@@ -39,7 +39,7 @@ namespace Attackers
 			m_needWeaponAim{needWeaponAim}
 		{ }
 
-		Target(bool needWeaponAim, const CURI &coords, AttackMethod method) :
+		Target(bool needWeaponAim, const URI &coords, AttackMethod method) :
 			m_coordinates{coords},
 			m_method{method},
 			m_needWeaponAim{needWeaponAim}
@@ -49,7 +49,7 @@ namespace Attackers
 
 		virtual void Retarget(const TaskController &task) = 0;
 
-		inline const CURI &GetCoordinates() const noexcept
+		inline const URI &GetCoordinates() const noexcept
 		{
 			return m_coordinates;
 		}
@@ -67,7 +67,7 @@ namespace Attackers
 		virtual PTarget Clone() = 0;
 
 	protected:
-		inline void SetCordinates(const CURI &coordinatesToSet)
+		inline void SetCordinates(const URI &coordinatesToSet)
 		{
 			m_coordinates = coordinatesToSet;
 		}
@@ -83,7 +83,7 @@ namespace Attackers
 		}
 
 	private:
-		CURI m_coordinates;
+		URI m_coordinates;
 		AttackMethod m_method;
 
 		bool m_needWeaponAim;

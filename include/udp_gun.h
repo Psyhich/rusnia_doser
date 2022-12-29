@@ -13,7 +13,7 @@ namespace Attackers
 		{}
 		~UDPGun() override {}
 
-		std::size_t FireTillDead(const CURI &targetToKill) noexcept override;
+		std::size_t FireTillDead(const URI &targetToKill) noexcept override;
 	private:
 		Wrappers::UDPWrapper m_flooder;
 	};

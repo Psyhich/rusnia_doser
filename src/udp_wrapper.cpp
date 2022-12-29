@@ -40,7 +40,7 @@ struct UDPPseudoHeader
 	u_int16_t udp_length;
 };
 
-void UDPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress)
+void UDPWrapper::CreatePacket(const URI &srcAddress, const URI &destAddress)
 {
 	std::fill(std::begin(m_currentPacket), std::end(m_currentPacket), 0);
 
@@ -58,7 +58,7 @@ void UDPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress)
 
 	m_sin.sin_family = AF_INET;
 	m_sin.sin_port = htons(destAddress.GetPort().value_or(80));
-	m_sin.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress()->c_str());
+	m_sin.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress().c_str());
 
 	// Setting IP header
 	ipHeader.ihl = 5;
@@ -70,7 +70,7 @@ void UDPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress)
 	ipHeader.ttl = 225;
 	ipHeader.protocol = IPPROTO_UDP;
 	ipHeader.check = 0;
-	ipHeader.saddr = inet_addr(srcAddress.GetPureAddress()->c_str());
+	ipHeader.saddr = inet_addr(srcAddress.GetPureAddress().c_str());
 	ipHeader.daddr = m_sin.sin_addr.s_addr;
 
 	ipHeader.check = GenerateIPChecksum(reinterpret_cast<uint16_t *>(m_currentPacket.data()), 
@@ -84,7 +84,7 @@ void UDPWrapper::CreatePacket(const CURI &srcAddress, const CURI &destAddress)
 	udpHeader.check = 0;
 }
 
-bool UDPWrapper::SendPacket(const CURI &srcAddress, const CURI &destAddress)
+bool UDPWrapper::SendPacket(const URI &srcAddress, const URI &destAddress)
 {
 	CreatePacket(srcAddress, destAddress);
 	int error = sendto(m_socketHandle, m_currentPacket.data(), 

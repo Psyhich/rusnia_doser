@@ -30,17 +30,17 @@ public:
 	TCPWrapper() noexcept;
 	~TCPWrapper() noexcept;
 
-	TCPStatus SendConnectPacket(const CURI &srcAddress, 
-		const CURI &destAddress) noexcept;
+	TCPStatus SendConnectPacket(const URI &srcAddress, 
+		const URI &destAddress) noexcept;
 
-	std::optional<CURI> TryResolveAddress(const CURI &destAddress, 
+	std::optional<URI> TryResolveAddress(const URI &destAddress, 
 		const std::vector<Proxy> &proxies) noexcept;
 
 	void SetTimeout(unsigned seconds) noexcept;
 
 private:
-	std::optional<NetUtil::IPPacket> CreatePacket(const CURI &srcAddress, 
-		const CURI &destAddress) noexcept;
+	std::optional<NetUtil::IPPacket> CreatePacket(const URI &srcAddress, 
+		const URI &destAddress) noexcept;
 	std::uint16_t GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcphdr) noexcept;
 private:
 	inline static const int ON{1};

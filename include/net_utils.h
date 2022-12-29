@@ -23,7 +23,7 @@ namespace NetUtil
 	using CAddrInfo = std::unique_ptr<addrinfo[], SAddrInfoDeleter>;
 
 
-	std::optional<CAddrInfo> GetHostAddresses(const CURI& cURIToGetAddress) noexcept;
+	std::optional<CAddrInfo> GetHostAddresses(const URI& cURIToGetAddress) noexcept;
 
 	inline static constexpr const int IP_PACKET_LENGTH{1500};
 

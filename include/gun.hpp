@@ -22,7 +22,7 @@ namespace Attackers
 		{ }
 		virtual ~IGun() {}
 
-		virtual std::size_t FireTillDead(const CURI &targetToKill) noexcept = 0;
+		virtual std::size_t FireTillDead(const URI &targetToKill) noexcept = 0;
 	protected:
 		const TaskController &m_currentTask;
 	};

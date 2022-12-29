@@ -49,7 +49,7 @@ bool HTTPGun::LoadProxies()
 	return false;
 }
 
-std::size_t HTTPGun::FireTillDead(const CURI &targetToKill) noexcept
+std::size_t HTTPGun::FireTillDead(const URI &targetToKill) noexcept
 {
 	std::size_t hits{0};
 
@@ -86,7 +86,7 @@ HTTPGun::TargetStatus HTTPGun::FireGun()
 	}
 }
 
-bool HTTPGun::AttackWithNoProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
+bool HTTPGun::AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	size_t errorsCount{0};
 
@@ -127,7 +127,7 @@ bool HTTPGun::AttackWithNoProxy(const CURI &targetToKill, std::size_t &hitsCount
 	return false;
 }
 
-void HTTPGun::AttackWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
+void HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	if(!LoadProxies())
 	{

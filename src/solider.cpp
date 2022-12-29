@@ -17,7 +17,7 @@ void Solider::ExecuteOrders(const TaskController &task,
 		}
 
 		Attackers::AttackMethod method = target.GetAttackMethod();
-		const CURI coordinates = target.GetCoordinates();
+		const URI coordinates = target.GetCoordinates();
 
 		if(Attackers::PGun gun = GunFactory(method, task, proxyGetter))
 		{
