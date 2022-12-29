@@ -77,7 +77,7 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const CURI &srcAddress, cons
 	return TCPStatus::GotError;
 }
 
-std::optional<CURI> TCPWrapper::CheckConnection(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept
+std::optional<CURI> TCPWrapper::TryResolveAddress(const CURI &destAddress, const std::vector<Proxy> &proxies) noexcept
 {
 	if(const auto resolved = NetUtil::GetHostAddresses(destAddress))
 	{
@@ -93,7 +93,7 @@ std::optional<CURI> TCPWrapper::CheckConnection(const CURI &destAddress, const s
 			{
 				continue;
 			}
-
+			dest.first.erase(dest.first.find('\0'));
 			CURI destAddress{dest.first};
 			destAddress.SetPort(destAddress.GetPort().value_or(80));
 

@@ -1,10 +1,14 @@
 #ifndef MULTITHREAD_H
 #define MULTITHREAD_H
 
-#include "spdlog/spdlog.h"
 #include <atomic>
+#include <functional>
+#include <map>
+#include <mutex>
 #include <optional>
 #include <thread>
+
+#include "spdlog/spdlog.h"
 
 class TaskController
 {
@@ -34,7 +38,7 @@ public:
 	{
 		if(m_currentThread)
 		{
-			SPDLOG_ERROR("Tried to start execution on already running task");
+			SPDLOG_CRITICAL("Tried to start execution on already running task");
 			throw std::runtime_error("Tried to start execution on already running task");
 		}
 

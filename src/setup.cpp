@@ -26,46 +26,41 @@ std::optional<Attackers::Tactic> Setup::GetTactic(const Args::CmdLine &cmd)
 
 	std::string cmdValue{cmd.value("--target")};
 
-	attackTactic.isAutoAim = cmdValue == "auto";
-
-	if(!attackTactic.isAutoAim)
+	attackTactic.coordintates = CURI{cmdValue};
+	
+	if(const auto method = attackTactic.coordintates.GetProtocol())
 	{
-		attackTactic.coordintates = CURI{cmdValue};
-		
-		if(const auto method = attackTactic.coordintates.GetProtocol())
+		if(*method == "http" || *method == "https")
 		{
-			if(*method == "http" || *method == "https")
+			attackTactic.method = Attackers::AttackMethod::HTTPAttack;
+		}
+		else if(*method == "tcp")
+		{
+			attackTactic.method = Attackers::AttackMethod::TCPAttack;
+			if(!attackTactic.coordintates.GetPort())
 			{
-				attackTactic.method = Attackers::AttackMethod::HTTPAttack;
-			}
-			else if(*method == "tcp")
-			{
-				attackTactic.method = Attackers::AttackMethod::TCPAttack;
-				if(!attackTactic.coordintates.GetPort())
-				{
-					SPDLOG_CRITICAL("TCP attack should have port!");
-					return std::nullopt;
-				}
-			}
-			else if(*method == "udp")
-			{
-				attackTactic.method = Attackers::AttackMethod::UDPAttack;
-				if(attackTactic.coordintates.GetPort())
-				{
-					SPDLOG_WARN("UDP attack don't need port, ignoring");
-				}
-			}
-			else
-			{
-				SPDLOG_ERROR("Failed to parse: {} to known methods!", *method);
+				SPDLOG_CRITICAL("TCP attack should have port!");
 				return std::nullopt;
+			}
+		}
+		else if(*method == "udp")
+		{
+			attackTactic.method = Attackers::AttackMethod::UDPAttack;
+			if(attackTactic.coordintates.GetPort())
+			{
+				SPDLOG_WARN("UDP attack don't need port, ignoring");
 			}
 		}
 		else
 		{
-			SPDLOG_ERROR("You should provide attack method like this method://target.com");
+			SPDLOG_ERROR("Failed to parse: {} to known methods!", *method);
 			return std::nullopt;
 		}
+	}
+	else
+	{
+		SPDLOG_ERROR("You should provide attack method like this method://target.com");
+		return std::nullopt;
 	}
 
 	attackTactic.squadSize = 

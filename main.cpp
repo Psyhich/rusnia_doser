@@ -1,30 +1,24 @@
 #include <csignal>
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <thread>
 #include <chrono>
 #include <atomic>
 
+#include "api_interface.h"
 #include "logging.h"
 #include "setup.h"
 #include "solider.h"
 #include "multithread.h"
-#include "dynamic_target.h"
 #include "static_target.hpp"
 
 static TaskController g_mainTask;
 
 Attackers::PTarget ProduceTarget(const Attackers::Tactic &tactic, const Args::CmdLine &)
 {
-	if(tactic.isAutoAim)
-	{
-		return std::make_unique<Attackers::DynamicTarget>();
-	}
-	else
-	{
-		return std::make_unique<Attackers::StaticTarget>(tactic.coordintates, tactic.method);
-	}
+	return std::make_unique<Attackers::StaticTarget>(tactic.coordintates, tactic.method);
 }
 
 void signalHanlder(int) 
@@ -56,30 +50,18 @@ int main(int argc, char **argv)
 	}
 
 	g_mainTask.StartExecution();
-	// TODO: this can be made as repeating task
-	Informator::ContactSources(g_mainTask);
 
-	// Basic setup is done checking tactic and starting attack
-
-	if(tactic->isAutoAim)
-	{
-		SPDLOG_INFO("Beggining auto attack");
-	}
-	else
-	{
-		SPDLOG_INFO("Beggining attack on {}", tactic->coordintates.GetFullURI());
-	}
+	SPDLOG_INFO("Beggining attack on {}", tactic->coordintates.GetFullURI());
 	SPDLOG_INFO("Dispatching {} soliders", tactic->squadSize);
-
 
 	const Attackers::PTarget target{ProduceTarget(*tactic, cmd)};
 	std::vector<Solider> squad;
 
 	squad.reserve(tactic->squadSize);
-
 	for(size_t i = 0; i < tactic->squadSize; i++)
 	{
-		squad.emplace_back(target->Clone())
+		squad.emplace_back(target->Clone(),
+			std::make_shared<EmptyProxyGetter>())
 			.StartExecution();
 	}
 

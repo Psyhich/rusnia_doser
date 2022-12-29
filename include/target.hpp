@@ -17,8 +17,6 @@ namespace Attackers
 
 	struct Tactic
 	{
-		bool isAutoAim;
-
 		AttackMethod method;
 		CURI coordintates{""};
 		std::size_t squadSize;

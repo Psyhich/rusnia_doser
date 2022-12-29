@@ -17,9 +17,6 @@ add_executable(rusnia_doser
 	src/setup.cpp
 
 	src/solider.cpp
-	src/api_interface.cpp
-
-	src/dynamic_target.cpp
 
 	src/http_gun.cpp
 	src/tcp_gun.cpp

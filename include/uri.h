@@ -9,6 +9,8 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
+// TODO: rewrite this pice of shit
+
 /// Utility class for easier parsing of URIs 
 /// specified by RFC3986
 class CURI
@@ -67,25 +69,13 @@ private:
 	std::string m_originalString;
 };
 
-template<typename OStream>
-OStream &operator<<(OStream &os, const CURI& uri)
-{
-	return fmt::format_to(std::ostream_iterator<char>(os), "{}", uri.GetFullURI());
-}
-
 template <>
 struct fmt::formatter<CURI>
 {
 	constexpr auto parse(format_parse_context& ctx) ->
 		decltype(ctx.begin())
 	{
-		const auto it = ctx.begin();
-		const auto end = ctx.end();
-		if (it != end && *it != '}')
-		{
-			throw format_error("invalid format");
-		}
-		return it;
+		return ctx.end();
 	}
 
 	template <typename FormatContext>

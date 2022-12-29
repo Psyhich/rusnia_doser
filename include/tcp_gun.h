@@ -1,6 +1,7 @@
 #ifndef TCP_GUN_H
 #define TCP_GUN_H
 
+#include "api_interface.h"
 #include "tcp_wrapper.h"
 #include "curl_wrapper.h"
 
@@ -12,7 +13,9 @@ namespace Attackers
 class TCPGun : public IGun
 {
 public:
-	TCPGun(const TaskController &task) : IGun(task)
+	TCPGun(const TaskController &task, SPProxyGetter proxyGetter) :
+		IGun(task),
+		m_proxyGetter{proxyGetter}
 	{ }
 
 	std::size_t FireTillDead(const CURI &targetToKill) noexcept override;
@@ -22,9 +25,10 @@ public:
 private:
 	bool ShootTarget(const CURI &targetToKill, std::size_t &hitsCount);
 
+	bool LoadProxies();
 private:
-	std::optional<Proxy> m_currentProxy;
 	TCPWrapper m_attacker;
+	SPProxyGetter m_proxyGetter;
 };
 
 

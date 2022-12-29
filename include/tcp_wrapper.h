@@ -33,7 +33,7 @@ public:
 	TCPStatus SendConnectPacket(const CURI &srcAddress, 
 		const CURI &destAddress) noexcept;
 
-	std::optional<CURI> CheckConnection(const CURI &destAddress, 
+	std::optional<CURI> TryResolveAddress(const CURI &destAddress, 
 		const std::vector<Proxy> &proxies) noexcept;
 
 	void SetTimeout(unsigned seconds) noexcept;

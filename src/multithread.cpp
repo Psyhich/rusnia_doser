@@ -1,3 +1,6 @@
+#include <mutex>
+#include <optional>
+
 #include "multithread.h"
 
 TaskController::~TaskController()
