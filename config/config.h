@@ -14,11 +14,12 @@ namespace AttackerConfig
 	namespace TCPAttacker
 	{
 		inline static constexpr const std::size_t TCP_ATTACKS_BEFORE_CHECK = 100000;
+		inline static constexpr const std::size_t MAX_ERRORS_BEFORE_CHECK = 10;
 	}
 
 	namespace UDPAttacker
 	{
-		inline static constexpr const std::size_t UDP_ATTACKS_BEFORE_CHECK = 100000;
+		inline static constexpr const std::size_t MAX_ATTACKS_BEFORE_CHECK = 100000;
 	}
 }
 

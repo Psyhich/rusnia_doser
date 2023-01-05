@@ -37,7 +37,7 @@ std::size_t Attackers::UDPGun::FireTillDead(const URI &targetToKill) noexcept
 			std::size_t errorsCount = 0;
 
 			for(std::size_t attacksCount = 0; 
-				attacksCount < AttackerConfig::UDPAttacker::UDP_ATTACKS_BEFORE_CHECK &&
+				attacksCount < AttackerConfig::UDPAttacker::MAX_ATTACKS_BEFORE_CHECK &&
 				!m_currentTask.ShouldStop(); attacksCount++)
 			{
 				destAdress.SetPort(NetUtil::GetRandomPort());
