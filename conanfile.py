@@ -9,7 +9,7 @@ class RusniaDoserConan(ConanFile):
     homepage = "https://github.com/Psyhich/rusnia_doser"
 
     requires = "libcurl/7.84.0", "spdlog/1.11.0",\
-        "nlohmann_json/3.11.2", "args-parser/6.3.2"
+        "args-parser/6.3.2"
     generators = "cmake_find_package"
     default_options = {"*:shared": False}
 
@@ -19,7 +19,7 @@ class RusniaDoserConan(ConanFile):
     default_options = {"shared": False, "fPIC": True}
 
     exports_sources = "CMakeLists.txt", "main.cpp", "config/*",\
-                      "src/*", "include/*", "conanfile.txt"
+                      "src/*", "conanfile.txt"
 
     def validate(self):
         if self.settings.os != "Linux":

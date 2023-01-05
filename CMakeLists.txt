@@ -2,58 +2,26 @@ cmake_minimum_required(VERSION 3.20)
 
 project(rusnia_doser LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}/")
 
 find_package(Threads REQUIRED)
-find_package(nlohmann_json REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(CURL REQUIRED)
 find_package(args-parser REQUIRED)
 
-add_executable(rusnia_doser 
-	main.cpp
+function(enable_pedantic_build TARGET)
+	target_compile_options("${TARGET}" PRIVATE
+		-Wall -Wextra -Wpedantic -Werror
+	)
+endfunction()
 
-	src/logging.cpp
-	src/setup.cpp
-
-	src/solider.cpp
-
-	src/http_gun.cpp
-	src/tcp_gun.cpp
-	src/udp_gun.cpp
-
-	src/curl_wrapper.cpp
-	src/tcp_wrapper.cpp
-	src/udp_wrapper.cpp
-
-	src/utils.cpp
-	src/net_utils.cpp
-	src/proxy_checker.cpp
-	src/uri.cpp
-	src/multithread.cpp
-)
-
-target_link_libraries(rusnia_doser
-	Threads::Threads
-	spdlog::spdlog
-	nlohmann_json::nlohmann_json
-	CURL::libcurl
-	args-parser::args-parser
-)
-
-target_include_directories(rusnia_doser PUBLIC 
-	include/
-	config/
-)
-
-target_compile_options(rusnia_doser PRIVATE
-	"-Wall" "-Wextra" "-Wpedantic" "-Werror"
-)
-
-set_target_properties(rusnia_doser PROPERTIES
-	CXX_STANDARD 17
-	CXX_STANDARD_REQUIRED ON
-	CXX_COMPILE_FEATURES ON)
+add_subdirectory(src/utils)
+add_subdirectory(src/network)
+add_subdirectory(src/guns)
+add_subdirectory(src/doser)
 
 # For clangd analyzer
 if(CMAKE_BUILD_TYPE MATCHES Debug)
