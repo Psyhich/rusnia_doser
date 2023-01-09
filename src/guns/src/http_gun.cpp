@@ -90,7 +90,7 @@ bool HTTPGun::AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount)
 {
 	size_t errorsCount{0};
 
-	m_headers = HTTPWrapper::BASE_HEADERS;
+	m_headers = HTTP::BASE_HEADERS;
 	m_wrapper.SetTarget(targetToKill.GetFullURI());
 
 	while(!m_currentTask.ShouldStop())
@@ -136,11 +136,11 @@ void HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) n
 	}
 
 	m_wrapper.SetTarget(targetToKill.GetFullURI());
-	m_headers = HTTPWrapper::BASE_HEADERS;
+	m_headers = HTTP::BASE_HEADERS;
 
 	std::size_t errorsCount{0};
 
-	Proxy currentProxy;
+	HTTP::Proxy currentProxy;
 	while(!m_currentTask.ShouldStop())
 	{
 		if(!m_availableProxies.empty())
@@ -156,7 +156,7 @@ void HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) n
 
 		// Attacking
 		std::size_t currentProxyAttackCounter{0}; 
-		m_wrapper.SetProxy(currentProxy.first, currentProxy.second);
+		m_wrapper.SetProxy(currentProxy);
 		while(currentProxyAttackCounter++ < ProxyConfig::MAX_PROXY_ATTACKS &&
 			!m_currentTask.ShouldStop())
 		{

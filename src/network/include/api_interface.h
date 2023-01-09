@@ -9,20 +9,18 @@
 #include <map>
 
 #include "multithread.h"
-
-using Headers = std::map<std::string, std::string>;
-using Proxy = std::pair<std::string, std::string>;
+#include "http_structs.hpp"
 
 class IProxyGetter
 {
 public:
-	virtual std::optional<std::vector<Proxy>> GetProxies() = 0;
+	virtual std::optional<std::vector<HTTP::Proxy>> GetProxies() = 0;
 };
 using SPProxyGetter = std::shared_ptr<IProxyGetter>;
 
 class EmptyProxyGetter : public IProxyGetter
 {
-	std::optional<std::vector<Proxy>> GetProxies() override
+	std::optional<std::vector<HTTP::Proxy>> GetProxies() override
 	{
 		return std::nullopt;
 	}

@@ -6,6 +6,7 @@
 #include "tcp_gun.h"
 
 #include "api_interface.h"
+#include "proxy_checker.h"
 #include "config.h"
 #include "utils.h"
 
@@ -49,7 +50,7 @@ bool TCPGun::FireWithoutProxy(const URI &targetToKill, std::size_t &hitsCount) n
 
 void TCPGun::FireWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
-	std::optional<std::vector<Proxy>> proxies;
+	std::optional<NetUtil::ProxyList> proxies;
 	while(!m_currentTask.ShouldStop() &&
 		!(proxies = m_proxyGetter->GetProxies()).has_value())
 	{

@@ -49,10 +49,10 @@ private:
 		m_wrapper.SetHeaders(m_headers);
 	}
 private:
-	std::deque<Proxy> m_availableProxies;
+	std::deque<HTTP::Proxy> m_availableProxies;
 
-	Headers m_headers{HTTPWrapper::BASE_HEADERS};
-	HTTPWrapper m_wrapper;
+	HTTP::Headers m_headers{HTTP::BASE_HEADERS};
+	HTTP::HTTPWrapper m_wrapper;
 	SPProxyGetter m_proxyGetter;
 };
 

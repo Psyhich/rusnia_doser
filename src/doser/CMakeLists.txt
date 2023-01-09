@@ -10,7 +10,6 @@ target_include_directories(doser_guns PUBLIC
 	include/
 )
 target_link_libraries(rusnia_doser
-	CURL::libcurl
 	args-parser::args-parser
 	doser_guns
 )

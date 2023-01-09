@@ -4,6 +4,7 @@ add_library(doser_network STATIC
 	${SRC}/net_utils.cpp
 	${SRC}/proxy_checker.cpp
 	${SRC}/uri.cpp
+	${SRC}/curl_utils.cpp
 
 	${SRC}/wrappers/http_wrapper.cpp
 	${SRC}/wrappers/tcp_wrapper.cpp
@@ -14,6 +15,8 @@ target_include_directories(doser_network
 	PRIVATE include/wrappers/
 )
 target_link_libraries(doser_network
-	PUBLIC doser_utils
+	PUBLIC
+		doser_utils
+		CURL::libcurl
 )
 enable_pedantic_build(doser_network)

@@ -58,17 +58,19 @@ std::string URI::ConstructFrom(const std::string &protocol,
 		constructedURI.append(PROTOCOL_SEPARATOR);
 	}
 	constructedURI.append(address);
-
-	if(pathNotEmpty && path.string()[0] != '/')
-	{
-		constructedURI.push_back('/');
-		constructedURI.append(path.string());
-	}
+	
 	if(stringifiedPort)
 	{
 		constructedURI.push_back(':');
 		constructedURI.append(*stringifiedPort);
 	}
+
+	if(pathNotEmpty && path.string()[0] != '/')
+	{
+		constructedURI.push_back('/');
+	}
+	constructedURI.append(path.string());
+
 	if(queryNotEmpty)
 	{
 		constructedURI.push_back('?');

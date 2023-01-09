@@ -8,6 +8,7 @@
 
 #include "api_interface.h"
 #include "net_utils.h"
+#include "proxy_checker.h"
 #include "uri.h"
 
 
@@ -28,7 +29,7 @@ public:
 		const URI &destAddress) noexcept;
 
 	std::optional<URI> TryResolveAddress(const URI &destAddress, 
-		const std::vector<Proxy> &proxies) noexcept;
+		const NetUtil::ProxyList &proxies) noexcept;
 
 	void SetTimeout(unsigned seconds) noexcept;
 

@@ -1,3 +1,4 @@
+#include "proxy_checker.h"
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
@@ -65,7 +66,7 @@ TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const URI &srcAddress, const
 	return TCPStatus::GotError;
 }
 
-std::optional<URI> TCPWrapper::TryResolveAddress(const URI &destAddress, const std::vector<Proxy> &proxies) noexcept
+std::optional<URI> TCPWrapper::TryResolveAddress(const URI &destAddress, const NetUtil::ProxyList &proxies) noexcept
 {
 	if(const auto resolved = NetUtil::GetHostAddresses(destAddress))
 	{
@@ -85,8 +86,8 @@ std::optional<URI> TCPWrapper::TryResolveAddress(const URI &destAddress, const s
 			URI destAddress{dest.first};
 			destAddress.SetPort(destAddress.GetPort().value_or(80));
 
-			HTTPWrapper pinger;
-			Headers headers{HTTPWrapper::BASE_HEADERS};
+			HTTP::HTTPWrapper pinger;
+			HTTP::Headers headers{HTTP::BASE_HEADERS};
 
 			if(proxies.size() != 0)
 			{
@@ -94,7 +95,7 @@ std::optional<URI> TCPWrapper::TryResolveAddress(const URI &destAddress, const s
 				{
 					NetUtil::UpdateHeaders(headers, proxy.first);
 					pinger.SetTarget(destAddress.GetFullURI());
-					pinger.SetProxy(proxy.first, proxy.second);
+					pinger.SetProxy(proxy);
 
 					if(const auto resp = pinger.Ping(AttackerConfig::DISCOVER_TIMEOUT_SECONDS, &headers))
 					{

@@ -8,15 +8,30 @@ class RusniaDoserConan(ConanFile):
     version = "0.1"
     homepage = "https://github.com/Psyhich/rusnia_doser"
 
-    requires = "libcurl/7.84.0", "spdlog/1.11.0",\
+    requires = "libcurl/7.86.0", "spdlog/1.11.0",\
         "args-parser/6.3.2"
     generators = "cmake_find_package"
-    default_options = {"*:shared": False}
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = {"shared": False, "fPIC": True}
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+        "*:shared": False,
+        "libcurl:with_gopher": False,
+        "libcurl:with_ftp": False,
+        "libcurl:with_imap": False,
+        "libcurl:with_mqtt": False,
+        "libcurl:with_ntlm": False,
+        "libcurl:with_ntlm_wb": False,
+        "libcurl:with_pop3": False,
+        "libcurl:with_rtsp": False,
+        "libcurl:with_smb": False,
+        "libcurl:with_smtp": False,
+        "libcurl:with_telnet": False,
+        "libcurl:with_tftp": False,
+    }
 
     exports_sources = "CMakeLists.txt", "main.cpp", "config/*",\
                       "src/*", "conanfile.txt"

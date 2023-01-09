@@ -9,7 +9,7 @@
 namespace NetUtil
 {
 
-using ProxyList = std::vector<Proxy>;
+using ProxyList = std::vector<HTTP::Proxy>;
 
 class IProxyChecker
 {

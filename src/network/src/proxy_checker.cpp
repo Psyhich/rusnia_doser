@@ -13,12 +13,12 @@ namespace NetUtil
 
 		SPDLOG_INFO("Probing proxies with default host: {}", ProxyConfig::PROXY_PROBING);
 
-		HTTPWrapper httpPinger;
-		Headers headers{HTTPWrapper::BASE_HEADERS};
+		HTTP::HTTPWrapper httpPinger;
+		Headers headers{HTTP::BASE_HEADERS};
 		httpPinger.SetTarget(ProxyConfig::PROXY_PROBING);
 		for(const auto &proxy : proxiesToCheck)
 		{
-			httpPinger.SetProxy(proxy.first, proxy.second);
+			httpPinger.SetProxy(proxy);
 			UpdateHeaders(headers, proxy.first);
 			httpPinger.SetHeaders(headers);
 

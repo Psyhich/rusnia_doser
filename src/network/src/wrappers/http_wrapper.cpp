@@ -1,14 +1,18 @@
 #include <algorithm>
 #include <cctype>
+#include <stdexcept>
 
+#include <curl/curl.h>
 #include <spdlog/spdlog.h>
 
+#include "curl_utils.h"
 #include "http_wrapper.h"
 
-HTTPWrapper::HTTPWrapper() noexcept
+namespace HTTP
 {
-	std::call_once(g_curlInitFlag, curl_global_init, CURL_GLOBAL_ALL);
 
+HTTPWrapper::HTTPWrapper()
+{
 	m_curlEnv.reset(curl_easy_init());
 	if(!m_curlEnv)
 	{
@@ -18,13 +22,10 @@ HTTPWrapper::HTTPWrapper() noexcept
 		return;
 	}
 
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_FOLLOWLOCATION, true);
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPPROXYTUNNEL, true);
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_SSL_VERIFYHOST, 0L);
+	SetDefaultOptions();
 }
 
-void HTTPWrapper::SetTarget(const std::string &address) noexcept
+void HTTPWrapper::SetTarget(const std::string &address)
 {
 	if(!m_curlEnv)
 	{
@@ -33,25 +34,26 @@ void HTTPWrapper::SetTarget(const std::string &address) noexcept
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_URL, address.c_str());
 }
 
-void HTTPWrapper::SetProxy(const std::string &proxyIP, const std::string &proxyAuth) noexcept
+// TODO: save headers internaly and only leave
+// external interface to add/remove custom headers
+void HTTPWrapper::SetProxy(const Proxy &proxy)
 {
 	if(!m_curlEnv)
 	{
 		return;
 	}
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_PROXY, proxyIP.c_str());
-	if(!proxyAuth.empty() || proxyAuth.size() >= 1)
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_PROXY, proxy.first.c_str());
+	if(!proxy.second.empty() || proxy.second.size() >= 1)
 	{
-		curl_easy_setopt(m_curlEnv.get(), CURLOPT_PROXYUSERPWD, proxyAuth.c_str());
+		curl_easy_setopt(m_curlEnv.get(), CURLOPT_PROXYUSERPWD, proxy.second.c_str());
 	}
 
-	char *url{nullptr};
-
+	const char *url{nullptr};
 	curl_easy_getinfo(m_curlEnv.get(), CURLINFO_EFFECTIVE_URL, &url);
 
 	if(url)
 	{
-		std::string data{std::move(url)};
+		std::string data{url};
 		if(size_t pos = data.find("://");
 			pos != std::string::npos)
 		{
@@ -61,29 +63,21 @@ void HTTPWrapper::SetProxy(const std::string &proxyIP, const std::string &proxyA
 	}
 }
 
-void HTTPWrapper::SetHeaders(const Headers &headers) noexcept
+void HTTPWrapper::SetHeaders(const Headers &headers)
 {
-	struct curl_slist *headers_list{NULL};
-	for(auto const &[key, value] : headers)
-	{
-		headers_list = curl_slist_append(headers_list, (key + ": " + value).c_str());
-	}
-
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPHEADER, headers_list);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPHEADER,
+		CURL_UTILS::HeadersToCurlSList(headers));
 }
 
-std::optional<Response> HTTPWrapper::Download(long timeout) noexcept
+std::optional<Response> HTTPWrapper::Download(long timeout)
 {
-	std::vector<char> readBuffer;
-
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEDATA, &readBuffer);
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEFUNCTION, DataCallback);
-	
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_CONNECTTIMEOUT, timeout);
 
-	CURLcode code = curl_easy_perform(m_curlEnv.get());
+	std::vector<char> readBuffer;
+	CURL_UTILS::DownloadConfig downloadConfig{m_curlEnv.get(), readBuffer};
 
-	if(!ProcessCode(code))
+	const CURLcode code = curl_easy_perform(m_curlEnv.get());
+	if(!CURL_UTILS::ProcessCode(code))
 	{
 		return {};
 	}
@@ -91,31 +85,21 @@ std::optional<Response> HTTPWrapper::Download(long timeout) noexcept
 	long httpCode{0};
 	curl_easy_getinfo(m_curlEnv.get(), CURLINFO_RESPONSE_CODE, &httpCode);
 
-	return Response(httpCode, std::move(readBuffer));
+	return Response{static_cast<HTTPCode>(httpCode), std::move(readBuffer)};
 }
 
-std::optional<long> HTTPWrapper::Ping(long timeout, Headers* headers) noexcept
+std::optional<HTTPCode> HTTPWrapper::Ping(long timeout, Headers* headers)
 {
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_TIMEOUT, timeout);
 
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEDATA, NULL);
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEFUNCTION, DoNothingCallback);
-
+	std::optional<CURL_UTILS::SaveHeadersConfig> saveHeadersConfig{std::nullopt};
 	if(headers != nullptr)
 	{
-		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERFUNCTION, ProcessHeaderCallback);
-		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERDATA, headers);
+		saveHeadersConfig.emplace(m_curlEnv.get(), *headers);
 	}
 
-	CURLcode code = curl_easy_perform(m_curlEnv.get());
-
-	if(headers != nullptr)
-	{
-		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERFUNCTION, DoNothingWithHeader);
-		curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERDATA, NULL);
-	}
-
-	if(!ProcessCode(code))
+	const CURLcode code = curl_easy_perform(m_curlEnv.get());
+	if(!CURL_UTILS::ProcessCode(code))
 	{
 		return {};
 	}
@@ -125,72 +109,39 @@ std::optional<long> HTTPWrapper::Ping(long timeout, Headers* headers) noexcept
 	return httpCode;
 }
 
-size_t HTTPWrapper::DataCallback(void *contents, size_t size, size_t nmemb, void *userp) noexcept
+std::optional<Response> HTTPWrapper::Send(const Payload &payload, long timeout)
 {
-	std::vector<char> &readBuffer = *static_cast<std::vector<char>*>(userp);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_CONNECTTIMEOUT, timeout);
 
-	readBuffer.reserve(readBuffer.size() + nmemb);
+	Response response;
+	CURL_UTILS::DownloadConfig downloadConfig{m_curlEnv.get(), response.m_data};
+	CURL_UTILS::UploadConfig uploadConfig{m_curlEnv.get(), payload.data};
 
-	for(size_t i = 0; i < nmemb; i++)
+	SetHeaders(payload.m_headers);
+
+	const CURLcode code = curl_easy_perform(m_curlEnv.get());
+	if(!CURL_UTILS::ProcessCode(code))
 	{
-		readBuffer.push_back(((char*)contents)[i]);
+		return {};
 	}
-
-	return nmemb * size;
-}
-
-size_t HTTPWrapper::ProcessHeaderCallback(char *buffer, size_t size, size_t nitems, void *userdata)
-{
-	char *currentChar = buffer;
-	const size_t headerSize = size * nitems;
-
-	std::string key;
-	std::string value;
-
-	size_t currentIndex{ 0 };
-	bool foundColon = false;
-
-	for(; currentIndex < headerSize; 
-		currentChar++, ++currentIndex)
-	{
-		if(*currentChar == ':')
-		{
-			foundColon = true;
-			break;
-		}
-		key.push_back(*currentChar);
-	}
-
-	if(!foundColon)
-	{
-		return headerSize;
-	}
-
-	++currentChar;
-	++currentIndex;
-
-	for(; currentIndex < headerSize; currentIndex++, currentChar++)
-	{
-		value.push_back(*currentChar);
-	}
-
-	TrimString(key);
-	std::transform(std::begin(key), std::end(key), std::begin(key), tolower);
-	key.shrink_to_fit();
 	
-	TrimString(value);
-	value.shrink_to_fit();
-
-	Headers &headers = *static_cast<Headers *>(userdata);
-	headers.emplace(std::move(key), std::move(value));
-
-	return size * nitems;
+	curl_easy_getinfo(m_curlEnv.get(), CURLINFO_RESPONSE_CODE, &response.m_code);
+	return response;
 }
 
-void HTTPWrapper::TrimString(std::string &stringToTrim)
+void HTTPWrapper::SetDefaultOptions()
 {
-	const auto startOfString = std::find_if_not(std::begin(stringToTrim), std::end(stringToTrim), isspace);
-	const auto endOfString = std::find_if_not(std::rbegin(stringToTrim), std::rend(stringToTrim), isspace);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_FOLLOWLOCATION, true);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPPROXYTUNNEL, true);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_SSL_VERIFYPEER, false);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_SSL_VERIFYHOST, false);
 
-	std::copy(startOfString, (endOfString + 1).base(), std::begin(stringToTrim));
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_READFUNCTION,
+		CURL_UTILS::DoNothingWithUploads);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_WRITEFUNCTION,
+		CURL_UTILS::DoNothingWithDownloads);
+	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERFUNCTION,
+		CURL_UTILS::DoNothingWithHeader);
+}
+
 }
