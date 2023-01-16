@@ -28,7 +28,8 @@ namespace NetUtil
 
 	// TODO: rework this function to apply
 	// more filters to get only one return address
-	std::optional<CAddrInfo> GetHostAddresses(const URI& cURIToGetAddress) noexcept;
+	std::optional<std::string> ResolveHostAddressByAddrInfo(const URI &hostAddress,
+		const addrinfo &addressInfo);
 
 	inline static constexpr const int IP_PACKET_LENGTH{1500};
 

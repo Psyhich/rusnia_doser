@@ -13,10 +13,11 @@
 #include "solider.h"
 #include "multithread.h"
 #include "static_target.hpp"
+#include "target.hpp"
 
 static TaskController g_mainTask;
 
-Attackers::PTarget ProduceTarget(const Attackers::Tactic &tactic, const Args::CmdLine &)
+Attackers::PTarget ProduceTarget(const Attackers::Tactic &tactic)
 {
 	return std::make_unique<Attackers::StaticTarget>(tactic.coordintates, tactic.method);
 }
@@ -24,6 +25,21 @@ Attackers::PTarget ProduceTarget(const Attackers::Tactic &tactic, const Args::Cm
 void signalHanlder(int) 
 {
 	g_mainTask.SendStop();
+}
+
+std::vector<Solider> CreateSquad(const Attackers::Tactic &tactic)
+{
+	auto target{ProduceTarget(tactic)};
+	auto proxyGetter{std::make_shared<EmptyProxyGetter>()};
+	std::vector<Solider> squad;
+
+	squad.reserve(tactic.squadSize);
+	for(size_t i = 0; i < tactic.squadSize; i++)
+	{
+		squad.emplace_back(target, proxyGetter);
+	}
+
+	return squad;
 }
 
 int main(int argc, char **argv)
@@ -43,7 +59,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	auto tactic = Setup::GetTactic(cmd);
+	const auto tactic = Setup::GetTactic(cmd);
 	if(!tactic)
 	{
 		return -1;
@@ -54,15 +70,10 @@ int main(int argc, char **argv)
 	SPDLOG_INFO("Beggining attack on {}", tactic->coordintates.GetFullURI());
 	SPDLOG_INFO("Dispatching {} soliders", tactic->squadSize);
 
-	const Attackers::PTarget target{ProduceTarget(*tactic, cmd)};
-	std::vector<Solider> squad;
-
-	squad.reserve(tactic->squadSize);
-	for(size_t i = 0; i < tactic->squadSize; i++)
+	auto squad{CreateSquad(*tactic)};
+	for(auto &solider : squad)
 	{
-		squad.emplace_back(target->Clone(),
-			std::make_shared<EmptyProxyGetter>())
-			.StartExecution();
+		solider.StartExecution();
 	}
 
 	while(!g_mainTask.ShouldStop())
@@ -80,6 +91,6 @@ int main(int argc, char **argv)
 		solider.WaitTillEnd();
 	}
 
-	SPDLOG_INFO("Attack finished");
+	SPDLOG_INFO("Attack finished, closing gracefully");
 	spdlog::drop_all();
 }

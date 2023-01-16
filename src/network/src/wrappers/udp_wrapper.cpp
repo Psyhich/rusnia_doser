@@ -1,4 +1,6 @@
+#include "resolvers.h"
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -14,12 +16,16 @@
 using namespace Wrappers;
 using namespace NetUtil;
 
-UDPWrapper::UDPWrapper()
+UDPWrapper::UDPWrapper(PAddressResolver resolver) :
+	m_resolver{resolver}
 {
 	m_socketHandle = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 	if(m_socketHandle == -1)
 	{
-		SPDLOG_CRITICAL("Failed to create raw socket, check your privilages");
+		SPDLOG_ERROR("Error while creating UDP socket, check if you are running with root");
+
+		// Throwing now, because we cannot fix or handle this
+		throw std::runtime_error("Error while creating UDP socket, check if you are running with root");
 	}
 }
 
@@ -86,15 +92,32 @@ void UDPWrapper::CreatePacket(const URI &srcAddress, const URI &destAddress)
 
 bool UDPWrapper::SendPacket(const URI &srcAddress, const URI &destAddress)
 {
-	CreatePacket(srcAddress, destAddress);
+	const auto resolvedAddress{m_resolver->ResolveHostAddress(destAddress)};
+	if(!resolvedAddress)
+	{
+		return false;
+	}
+
+	CreatePacket(srcAddress, *resolvedAddress);
 	int error = sendto(m_socketHandle, m_currentPacket.data(), 
 		m_currentPacket.size(), 0, reinterpret_cast<struct sockaddr *>(&m_sin),
 		sizeof(m_sin));
 
 	if(error < 0)
 	{
-		SPDLOG_ERROR("Got socket error: {}", std::strerror(error));
+		SPDLOG_ERROR("Failed to send UDP datagram, got error: {}", std::strerror(error));
 	}
 
 	return error > 0;
+}
+
+PossibleAddress UDPAddressResolver::ResolveHostAddress(const URI &hostAddress)
+{
+	addrinfo addressHint;
+	std::memset(&addressHint, 0, sizeof(addressHint));
+	addressHint.ai_family = AF_INET;
+	addressHint.ai_socktype = SOCK_DGRAM;
+	addressHint.ai_protocol = IPPROTO_UDP;
+
+	return NetUtil::ResolveHostAddressByAddrInfo(hostAddress, addressHint);
 }

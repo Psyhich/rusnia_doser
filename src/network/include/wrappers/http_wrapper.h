@@ -31,6 +31,7 @@ public:
 	void SetHeaders(const Headers &headers);
 
 	std::optional<Response> Download(long timeout=5);
+	// TODO: remove second parameter of Ping
 	std::optional<HTTPCode> Ping(long timeout=5, Headers *headers = nullptr);
 	std::optional<Response> Send(const Payload &payload, long timeout=5);
 private:
@@ -38,6 +39,7 @@ private:
 
 private:
 	CURL_UTILS::PCURL m_curlEnv;
+	CURL_UTILS::UseHeadersConfig m_headersConfig;
 };
 
 }

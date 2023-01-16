@@ -1,8 +1,11 @@
-#include <cstring>
+#include <arpa/inet.h>
+#include <netdb.h>
 
+#include <cstring>
 #include <random>
 #include <iostream>
 #include <array>
+#include <charconv>
 
 #include <spdlog/spdlog.h>
 
@@ -514,29 +517,50 @@ const std::array<std::string, 500> useragents =
 
 using namespace NetUtil;
 
-std::optional<CAddrInfo> NetUtil::GetHostAddresses(const URI& cURIToGetAddress) noexcept
+std::optional<std::string> NetUtil::ResolveHostAddressByAddrInfo(const URI &hostURI,
+		const addrinfo &addressInfo)
 {
-	const auto address = cURIToGetAddress.GetPureAddress();
-	if(!address.empty())
+	const auto &hostAddress{hostURI.GetPureAddress()};
+	if(hostAddress.empty())
 	{
-		// Setting hint to look for host(protocol, socket type and IPv4)
-		addrinfo addressHint;
-		std::memset(&addressHint, 0, sizeof(addressHint));
-		addressHint.ai_family = AF_INET;
-		addressHint.ai_socktype = SOCK_STREAM;
-		addressHint.ai_protocol = 0;
-
-		// Creating pointer for array of resolved hosts(we would need only first one)
-		addrinfo *pResolvedHosts = nullptr;
-		if(getaddrinfo(address.c_str(), nullptr, &addressHint, &pResolvedHosts) != 0 || 
-			pResolvedHosts == nullptr)
-		{
-			SPDLOG_WARN("Failed to resolve {}", cURIToGetAddress);
-			return std::nullopt;
-		}
-		return CAddrInfo(pResolvedHosts);
+		return std::nullopt;
 	}
-	return std::nullopt;
+
+	std::string servicePort;
+	const auto hostPort{hostURI.GetPort()};
+	if(hostPort)
+	{
+		servicePort.reserve(5); // Because max port number is 65535
+		std::to_chars(servicePort.data(), servicePort.data() + servicePort.size(), *hostPort);
+	}
+
+	addrinfo *pResolvedHosts = nullptr;
+	if(::getaddrinfo(hostAddress.c_str(), hostPort ? servicePort.c_str() : nullptr,
+			&addressInfo, &pResolvedHosts) != 0 || 
+		pResolvedHosts == nullptr)
+	{
+		SPDLOG_WARN("Failed to resolve {}", hostURI);
+		return std::nullopt;
+	}
+
+	NetUtil::CAddrInfo resolvedHosts{pResolvedHosts};
+	if(resolvedHosts[0].ai_next != nullptr)
+	{
+		SPDLOG_INFO("Resolved address {} resulted into more than one address", hostURI);
+	}
+
+	std::string resolvedAddress;
+	resolvedAddress.resize(INET_ADDRSTRLEN);
+
+	if(inet_ntop(AF_INET, &((sockaddr_in *)resolvedHosts[0].ai_addr)->sin_addr, 
+		resolvedAddress.data(), resolvedAddress.size()) == nullptr)
+	{
+		SPDLOG_WARN("Error in converting network address to host address while resolving {}", hostURI);
+		return std::nullopt;
+	}
+	resolvedAddress.erase(resolvedAddress.find('\0'));
+
+	return resolvedAddress;
 }
 
 

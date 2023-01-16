@@ -1,11 +1,12 @@
 #include "proxy_checker.h"
+#include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <netinet/ip.h> 
-
 #define __FAVOR_BSD     
 #include <netinet/tcp.h>
 #include <arpa/inet.h>  
@@ -18,7 +19,8 @@
 #include "net_utils.h"
 #include "config.h"
 
-TCPWrapper::TCPWrapper() noexcept
+TCPWrapper::TCPWrapper(NetUtil::PAddressResolver resolver) :
+	m_resolver{resolver}
 {
 	// Firstly probing for interface
 	m_socketFD = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
@@ -27,6 +29,9 @@ TCPWrapper::TCPWrapper() noexcept
 		close(m_socketFD);
 		m_socketFD = -1;
 		SPDLOG_ERROR("Error while creating TCP socket, check if you are running with root");
+
+		// Throwing now, because we cannot fix or handle this
+		throw std::runtime_error("Error while creating TCP socket, check if you are running with root");
 	}
 }
 
@@ -38,83 +43,37 @@ TCPWrapper::~TCPWrapper() noexcept
 	}
 }
 
-TCPWrapper::TCPStatus TCPWrapper::SendConnectPacket(const URI &srcAddress, const URI &destAddress) noexcept
+bool TCPWrapper::SendConnectPacket(const URI &srcAddress, const URI &destAddress) noexcept
 {
 	if(m_socketFD == -1)
 	{
 		SPDLOG_ERROR("Socket is not created");
-		return TCPStatus::GotError;
+		SPDLOG_ERROR("Error while sending TCP packet, check if you are running with root");
+		return false;
 	}
 
-	if(auto packet = CreatePacket(srcAddress, destAddress))
+	const auto packet = CreatePacket(srcAddress, destAddress);
+	if(!packet)
 	{
-		struct sockaddr_in addr;
-		std::memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_port = htons(destAddress.GetPort().value_or(80));
-		addr.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress().c_str());
-
-		if(sendto(m_socketFD, packet->data(), NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
-			(struct sockaddr *) &addr, sizeof(addr)) < 0)
-		{
-			SPDLOG_INFO("Got error while sending package: {}", std::strerror(errno));
-			return TCPStatus::NeedConnectivityCheck;
-		}
-		return TCPStatus::Success;
+		return false;
 	}
-	SPDLOG_ERROR("Error while sending TCP packet, check if you are running with root");
-	return TCPStatus::GotError;
-}
 
-std::optional<URI> TCPWrapper::TryResolveAddress(const URI &destAddress, const NetUtil::ProxyList &proxies) noexcept
-{
-	if(const auto resolved = NetUtil::GetHostAddresses(destAddress))
+	struct sockaddr_in addr;
+	std::memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(destAddress.GetPort().value_or(80));
+	addr.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress().c_str());
+
+	if(sendto(m_socketFD, packet->data(),
+		NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
+		reinterpret_cast<struct sockaddr *>(&addr),
+		sizeof(addr)) < 0)
 	{
-		std::pair<std::string, int> dest;
-		dest.second = htons(destAddress.GetPort().value_or(80));
-
-		for(struct addrinfo *addr = resolved->get(); 
-			addr != nullptr; addr = addr->ai_next)
-		{
-			dest.first.resize(INET_ADDRSTRLEN);
-			if(inet_ntop(AF_INET, &((sockaddr_in *)addr->ai_addr)->sin_addr, 
-				dest.first.data(), dest.first.size()) == nullptr)
-			{
-				continue;
-			}
-			dest.first.erase(dest.first.find('\0'));
-			URI destAddress{dest.first};
-			destAddress.SetPort(destAddress.GetPort().value_or(80));
-
-			HTTP::HTTPWrapper pinger;
-			HTTP::Headers headers{HTTP::BASE_HEADERS};
-
-			if(proxies.size() != 0)
-			{
-				for(const auto &proxy : proxies)
-				{
-					NetUtil::UpdateHeaders(headers, proxy.first);
-					pinger.SetTarget(destAddress.GetFullURI());
-					pinger.SetProxy(proxy);
-
-					if(const auto resp = pinger.Ping(AttackerConfig::DISCOVER_TIMEOUT_SECONDS, &headers))
-					{
-						if(resp < 400)
-						{
-							return destAddress;
-						}
-					}
-				}
-			}
-			else
-			{
-				SPDLOG_INFO("No proxies provided for check returning first value");
-				return destAddress;
-			}
-		}
+		SPDLOG_INFO("Got error while sending package: {}", std::strerror(errno));
+		return false;
 	}
 
-	return {};
+	return true;
 }
 
 std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const URI &srcAddress, const URI &destAddress) noexcept
@@ -314,4 +273,15 @@ std::uint16_t TCPWrapper::GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcp
 	chksumlen += sizeof(tcphdr.th_urp);
 
 	return NetUtil::GenerateIPChecksum((uint16_t *) buf, chksumlen);
+}
+
+NetUtil::PossibleAddress TCPAddressResolver::ResolveHostAddress(const URI &hostAddress)
+{
+	addrinfo addressHint;
+	std::memset(&addressHint, 0, sizeof(addressHint));
+	addressHint.ai_family = AF_INET;
+	addressHint.ai_socktype = SOCK_STREAM;
+	addressHint.ai_protocol = IPPROTO_TCP;
+
+	return NetUtil::ResolveHostAddressByAddrInfo(hostAddress, addressHint);
 }

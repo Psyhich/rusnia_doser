@@ -8,30 +8,17 @@
 
 #include "api_interface.h"
 #include "net_utils.h"
-#include "proxy_checker.h"
 #include "uri.h"
-
+#include "resolvers.h"
 
 class TCPWrapper
 {
 public:
-	enum class TCPStatus
-	{
-		GotError,
-		NeedConnectivityCheck,
-		Success
-	};
-
-	TCPWrapper() noexcept;
+	TCPWrapper(NetUtil::PAddressResolver resolver);
 	~TCPWrapper() noexcept;
 
-	TCPStatus SendConnectPacket(const URI &srcAddress, 
+	bool SendConnectPacket(const URI &srcAddress, 
 		const URI &destAddress) noexcept;
-
-	std::optional<URI> TryResolveAddress(const URI &destAddress, 
-		const NetUtil::ProxyList &proxies) noexcept;
-
-	void SetTimeout(unsigned seconds) noexcept;
 
 private:
 	std::optional<NetUtil::IPPacket> CreatePacket(const URI &srcAddress, 
@@ -41,7 +28,20 @@ private:
 	inline static const int ON{1};
 	inline static constexpr const size_t TCP_HEADER_LENGTH{20};
 
+	// TODO: move IP packet from functions to member of this class
+
+	NetUtil::PAddressResolver m_resolver;
 	int m_socketFD{-1};
+};
+
+class TCPAddressResolver : public NetUtil::AddressResolver
+{
+public:
+	TCPAddressResolver() = default;
+	~TCPAddressResolver()
+	{}
+
+	NetUtil::PossibleAddress ResolveHostAddress(const URI &hostAddress) override;
 };
 
 #endif // SOCKET_WRAPPER_H

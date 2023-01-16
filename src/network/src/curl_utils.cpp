@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -141,19 +142,32 @@ size_t UploadConfig::UploadVectorDataCallback(void *buffer, size_t size, size_t 
 	return bytesSent - bytesCounter.bytesRead;
 }
 
+UseHeadersConfig::UseHeadersConfig(CURL *curlEnv, const Headers &headersToUse) :
+	m_curlEnv{curlEnv},
+	m_curlHeaders{HeadersToCurlSList(headersToUse)}
+{
+	curl_easy_setopt(m_curlEnv, CURLOPT_HTTPHEADER, m_curlHeaders.get());
+}
+void UseHeadersConfig::SetHeaders(const Headers &headersToUse)
+{
+	auto newCurlHeaders{HeadersToCurlSList(headersToUse)};
+	m_curlHeaders.swap(newCurlHeaders);
+	curl_easy_setopt(m_curlEnv, CURLOPT_HTTPHEADER, m_curlHeaders.get());
+}
+
 size_t DoNothingWithUploads(void *, size_t, size_t, void *)
 {
 	return 0;
 }
 
-struct curl_slist *HeadersToCurlSList(const Headers &headers)
+PCURLList HeadersToCurlSList(const Headers &headers)
 {
 	struct curl_slist *headers_list{NULL};
 	for(auto const &[key, value] : headers)
 	{
 		headers_list = curl_slist_append(headers_list, (key + ": " + value).c_str());
 	}
-	return headers_list;
+	return PCURLList{headers_list};
 }
 
 bool ProcessCode(CURLcode code) noexcept

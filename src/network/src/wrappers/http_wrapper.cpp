@@ -11,7 +11,8 @@
 namespace HTTP
 {
 
-HTTPWrapper::HTTPWrapper()
+HTTPWrapper::HTTPWrapper() :
+	m_headersConfig(nullptr, {})
 {
 	m_curlEnv.reset(curl_easy_init());
 	if(!m_curlEnv)
@@ -65,8 +66,7 @@ void HTTPWrapper::SetProxy(const Proxy &proxy)
 
 void HTTPWrapper::SetHeaders(const Headers &headers)
 {
-	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPHEADER,
-		CURL_UTILS::HeadersToCurlSList(headers));
+	m_headersConfig.SetHeaders(headers);
 }
 
 std::optional<Response> HTTPWrapper::Download(long timeout)
@@ -131,6 +131,8 @@ std::optional<Response> HTTPWrapper::Send(const Payload &payload, long timeout)
 
 void HTTPWrapper::SetDefaultOptions()
 {
+	// TODO: think about changing CURLOPT_FOLLOWLOCATION
+	// to false for omiting redirecting to 0.0.0.0
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_FOLLOWLOCATION, true);
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HTTPPROXYTUNNEL, true);
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_SSL_VERIFYPEER, false);
@@ -142,6 +144,8 @@ void HTTPWrapper::SetDefaultOptions()
 		CURL_UTILS::DoNothingWithDownloads);
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_HEADERFUNCTION,
 		CURL_UTILS::DoNothingWithHeader);
+
+	m_headersConfig = CURL_UTILS::UseHeadersConfig{m_curlEnv.get(), {}};
 }
 
 }

@@ -30,7 +30,7 @@ namespace Attackers
 	};
 
 	class Target;
-	using PTarget = std::unique_ptr<Target>;
+	using PTarget = std::shared_ptr<Target>;
 
 	class Target
 	{

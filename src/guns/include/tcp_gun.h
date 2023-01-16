@@ -3,7 +3,7 @@
 
 #include "api_interface.h"
 #include "wrappers/tcp_wrapper.h"
-
+#include "resolvers.h"
 #include "gun.hpp"
 
 namespace Attackers
@@ -12,22 +12,18 @@ namespace Attackers
 class TCPGun : public IGun
 {
 public:
-	TCPGun(const TaskController &task, SPProxyGetter proxyGetter) :
+	TCPGun(const TaskController &task, NetUtil::PAddressResolver resolver) :
 		IGun(task),
-		m_proxyGetter{proxyGetter}
+		m_attacker{resolver}
 	{ }
 
 	std::size_t FireTillDead(const URI &targetToKill) noexcept override;
 
-	bool FireWithoutProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
-	void FireWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
 private:
 	bool ShootTarget(const URI &targetToKill, std::size_t &hitsCount);
 
-	bool LoadProxies();
 private:
 	TCPWrapper m_attacker;
-	SPProxyGetter m_proxyGetter;
 };
 
 

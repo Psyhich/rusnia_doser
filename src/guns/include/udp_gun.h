@@ -9,7 +9,9 @@ namespace Attackers
 	class UDPGun : public IGun
 	{
 	public:
-		UDPGun(const TaskController &task) : IGun(task)
+		UDPGun(const TaskController &task, NetUtil::PAddressResolver udpAdressResolver) :
+			IGun(task),
+			m_flooder{udpAdressResolver}
 		{}
 		~UDPGun() override {}
 

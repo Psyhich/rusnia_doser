@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+#include "curl/multi.h"
 #include "curl/curl.h"
 #include "http_structs.hpp"
 
@@ -19,6 +20,24 @@ struct CURLDeleter
 	}
 };
 using PCURL = std::unique_ptr<CURL, CURLDeleter>;
+
+struct CURLMultiDeleter
+{
+	void operator()(CURLM *curlEnv)
+	{
+		curl_multi_cleanup(curlEnv);
+	}
+};
+using PCURLM = std::unique_ptr<CURLM, CURLMultiDeleter>;
+
+struct CURLListDeleter
+{
+	void operator()(curl_slist *listToDeallocate)
+	{
+		curl_slist_free_all(listToDeallocate);
+	}
+};
+using PCURLList = std::unique_ptr<curl_slist, CURLListDeleter>;
 
 class CURLInitializer
 {
@@ -38,6 +57,8 @@ struct ReadBytesCounter
 	std::size_t bytesRead{0};
 };
 
+// TODO: rewrite this by using creating curl
+// config interface and using virtual method apply
 class SaveHeadersConfig
 {
 public:
@@ -78,8 +99,24 @@ private:
 };
 size_t DoNothingWithUploads(void *buffer, size_t size, size_t nitems, void *bytesCounterPtr);
 
-[[nodiscard]]
-struct curl_slist *HeadersToCurlSList(const Headers &headers);
+class UseHeadersConfig
+{
+public:
+	UseHeadersConfig(CURL *curlEnv, const Headers &headersToUse);
+
+	UseHeadersConfig(const UseHeadersConfig &copyFrom) = delete;
+	UseHeadersConfig &operator=(const UseHeadersConfig &copyFrom) = delete;
+
+	UseHeadersConfig(UseHeadersConfig &&copyFrom) = default;
+	UseHeadersConfig &operator=(UseHeadersConfig &&copyFrom) = default;
+
+	void SetHeaders(const Headers &headersToUse);
+private:
+	CURL *m_curlEnv;
+	PCURLList m_curlHeaders;
+};
+
+PCURLList HeadersToCurlSList(const Headers &headers);
 
 bool ProcessCode(CURLcode code) noexcept;
 

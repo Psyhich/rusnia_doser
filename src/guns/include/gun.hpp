@@ -22,6 +22,7 @@ namespace Attackers
 		{ }
 		virtual ~IGun() {}
 
+		// TODO: remove this noexcept
 		virtual std::size_t FireTillDead(const URI &targetToKill) noexcept = 0;
 	protected:
 		const TaskController &m_currentTask;

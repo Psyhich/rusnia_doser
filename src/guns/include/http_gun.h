@@ -32,8 +32,8 @@ public:
 private:
 	TargetStatus FireGun();
 
-	bool AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
-	void AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
+	std::optional<TargetStatus> AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
+	std::optional<TargetStatus> AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept;
 
 	bool LoadProxies();
 

