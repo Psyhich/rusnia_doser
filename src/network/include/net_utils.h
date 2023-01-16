@@ -25,9 +25,6 @@ namespace NetUtil
 
 	using CAddrInfo = std::unique_ptr<addrinfo[], SAddrInfoDeleter>;
 
-
-	// TODO: rework this function to apply
-	// more filters to get only one return address
 	std::optional<std::string> ResolveHostAddressByAddrInfo(const URI &hostAddress,
 		const addrinfo &addressInfo);
 
