@@ -6,7 +6,7 @@
 #include "net_utils.h"
 #include "utils.h"
 
-std::size_t Attackers::UDPGun::FireTillDead(const URI &targetToKill) noexcept
+std::size_t Attackers::UDPGun::FireTillDead(const URI &targetToKill)
 {
 	std::size_t hitsCount{0};
 

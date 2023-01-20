@@ -17,7 +17,7 @@ public:
 		m_attacker{resolver}
 	{ }
 
-	std::size_t FireTillDead(const URI &targetToKill) noexcept override;
+	std::size_t FireTillDead(const URI &targetToKill) override;
 
 private:
 	bool ShootTarget(const URI &targetToKill, std::size_t &hitsCount);

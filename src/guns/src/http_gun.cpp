@@ -49,7 +49,7 @@ bool HTTPGun::LoadProxies()
 	return false;
 }
 
-std::size_t HTTPGun::FireTillDead(const URI &targetToKill) noexcept
+std::size_t HTTPGun::FireTillDead(const URI &targetToKill)
 {
 	std::size_t hits{0};
 

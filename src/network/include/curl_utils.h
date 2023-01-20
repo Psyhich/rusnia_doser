@@ -57,8 +57,6 @@ struct ReadBytesCounter
 	std::size_t bytesRead{0};
 };
 
-// TODO: rewrite this by using creating curl
-// config interface and using virtual method apply
 class SaveHeadersConfig
 {
 public:

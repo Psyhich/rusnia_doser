@@ -12,7 +12,7 @@
 
 using namespace Attackers;
 
-std::size_t TCPGun::FireTillDead(const URI &targetToKill) noexcept
+std::size_t TCPGun::FireTillDead(const URI &targetToKill)
 {
 	std::size_t hitsCount{0};
 	std::size_t errorsCount{0};

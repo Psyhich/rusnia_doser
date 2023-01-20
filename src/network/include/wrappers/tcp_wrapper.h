@@ -28,8 +28,6 @@ private:
 	inline static const int ON{1};
 	inline static constexpr const size_t TCP_HEADER_LENGTH{20};
 
-	// TODO: move IP packet from functions to member of this class
-
 	NetUtil::PAddressResolver m_resolver;
 	int m_socketFD{-1};
 };

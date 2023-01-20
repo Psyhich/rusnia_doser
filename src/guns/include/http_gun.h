@@ -27,7 +27,7 @@ public:
 		IGun(task),
 		m_proxyGetter{proxyGetter}
 	{}
-	std::size_t FireTillDead(const URI &targetToKill) noexcept override;
+	std::size_t FireTillDead(const URI &targetToKill) override;
 
 private:
 	TargetStatus FireGun();
