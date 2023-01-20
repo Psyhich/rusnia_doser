@@ -84,15 +84,9 @@ std::optional<Response> HTTPWrapper::Download(long timeout)
 	return Response{static_cast<HTTPCode>(httpCode), std::move(readBuffer)};
 }
 
-std::optional<HTTPCode> HTTPWrapper::Ping(long timeout, Headers* headers)
+std::optional<HTTPCode> HTTPWrapper::Ping(long timeout)
 {
 	curl_easy_setopt(m_curlEnv.get(), CURLOPT_TIMEOUT, timeout);
-
-	std::optional<CURL_UTILS::SaveHeadersConfig> saveHeadersConfig{std::nullopt};
-	if(headers != nullptr)
-	{
-		saveHeadersConfig.emplace(m_curlEnv.get(), *headers);
-	}
 
 	const CURLcode code = curl_easy_perform(m_curlEnv.get());
 	if(!CURL_UTILS::ProcessCode(code))

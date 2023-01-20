@@ -31,7 +31,7 @@ public:
 	void SetHeaders(const Headers &headers);
 
 	std::optional<Response> Download(long timeout=5);
-	std::optional<HTTPCode> Ping(long timeout=5, Headers *headers = nullptr);
+	std::optional<HTTPCode> Ping(long timeout=5);
 	std::optional<Response> Send(const Payload &payload, long timeout=5);
 private:
 	void SetDefaultOptions();
