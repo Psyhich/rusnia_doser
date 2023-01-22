@@ -37,13 +37,15 @@ public:
 		const URI &destAddress) noexcept;
 
 private:
-	std::optional<NetUtil::IPPacket> CreatePacket(const URI &srcAddress, 
+	bool CreatePacket(const URI &srcAddress, 
 		const URI &destAddress) noexcept;
-	std::uint16_t GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcphdr) noexcept;
+
+	static std::uint16_t GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcphdr) noexcept;
 private:
 	inline static const int ON{1};
 	inline static constexpr const size_t TCP_HEADER_LENGTH{20};
 
+	NetUtil::IPPacket m_currentPacket;
 	NetUtil::PAddressResolver m_resolver;
 	int m_socketFD{-1};
 };

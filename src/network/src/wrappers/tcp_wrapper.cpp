@@ -49,13 +49,11 @@ bool TCPWrapper::SendConnectPacket(const URI &srcAddress, const URI &destAddress
 {
 	if(m_socketFD == -1)
 	{
-		SPDLOG_ERROR("Socket is not created");
-		SPDLOG_ERROR("Error while sending TCP packet, check if you are running with root");
+		SPDLOG_ERROR("Error while sending TCP packet. Socket is not created, check if you are running with root");
 		return false;
 	}
 
-	const auto packet = CreatePacket(srcAddress, destAddress);
-	if(!packet)
+	if(!CreatePacket(srcAddress, destAddress))
 	{
 		return false;
 	}
@@ -66,7 +64,7 @@ bool TCPWrapper::SendConnectPacket(const URI &srcAddress, const URI &destAddress
 	addr.sin_port = htons(destAddress.GetPort().value_or(80));
 	addr.sin_addr.s_addr = inet_addr(destAddress.GetPureAddress().c_str());
 
-	if(sendto(m_socketFD, packet->data(),
+	if(sendto(m_socketFD, m_currentPacket.data(),
 		NetUtil::IP_HEADER_LENGTH + TCP_HEADER_LENGTH, 0, 
 		reinterpret_cast<struct sockaddr *>(&addr),
 		sizeof(addr)) < 0)
@@ -78,7 +76,7 @@ bool TCPWrapper::SendConnectPacket(const URI &srcAddress, const URI &destAddress
 	return true;
 }
 
-std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const URI &srcAddress, const URI &destAddress) noexcept
+bool TCPWrapper::CreatePacket(const URI &srcAddress, const URI &destAddress) noexcept
 {
 	// Headers for IP
 	struct ip ipHeader;
@@ -114,12 +112,12 @@ std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const URI &srcAddress,
 	int respCode = inet_pton(AF_INET, srcAddress.GetPureAddress().c_str(), &(ipHeader.ip_src));
 	if(respCode == -1)
 	{
-		return {};
+		return false;
 	}
 	respCode = inet_pton(AF_INET, destAddress.GetPureAddress().c_str(), &(ipHeader.ip_dst));
 	if(respCode == -1)
 	{
-		return {};
+		return false;
 	}
 
 	// IPv4 header checksum (16 bits): set to 0 when calculating checksum
@@ -176,16 +174,15 @@ std::optional<NetUtil::IPPacket> TCPWrapper::CreatePacket(const URI &srcAddress,
 	// TCP checksum (16 bits)
 	tcpHeader.th_sum = GenerateTCPChecksum(ipHeader, tcpHeader);
 
-	NetUtil::IPPacket packet;
 	// Setting IPv4 hedaer to packet
-	std::memcpy(packet.data(), &ipHeader, NetUtil::IP_HEADER_LENGTH * sizeof (uint8_t));
+	std::memcpy(m_currentPacket.data(), &ipHeader, NetUtil::IP_HEADER_LENGTH * sizeof (uint8_t));
 	// Setting TCP header
 	std::memcpy(
-		packet.data() + NetUtil::IP_HEADER_LENGTH,
+		m_currentPacket.data() + NetUtil::IP_HEADER_LENGTH,
 		&tcpHeader,
 		TCP_HEADER_LENGTH * sizeof (uint8_t));
 
-	return packet;
+	return true;
 }
 
 std::uint16_t TCPWrapper::GenerateTCPChecksum(struct ip iphdr, struct tcphdr tcphdr) noexcept
