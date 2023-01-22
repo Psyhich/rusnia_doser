@@ -13,7 +13,7 @@
 #include "udp_wrapper.h"
 #include "utils.h"
 
-using namespace Wrappers;
+using namespace Wrappers::UDP;
 using namespace NetUtil;
 
 UDPWrapper::UDPWrapper(PAddressResolver resolver) :

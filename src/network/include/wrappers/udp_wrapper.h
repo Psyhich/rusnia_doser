@@ -6,43 +6,57 @@
 
 #include <array>
 
+#include "module.h"
 #include "net_utils.h"
 #include "resolvers.h"
 #include "uri.h"
 
-namespace Wrappers
+namespace Wrappers::UDP
 {
-	class UDPWrapper
+
+class UDPModule : public IModule
+{
+public:
+	UDPModule() = default;
+	~UDPModule() override {}
+
+	bool Initialize() override
 	{
-	public:
-		UDPWrapper(NetUtil::PAddressResolver resolver);
-		~UDPWrapper();
+		return true;
+	}
+};
 
-		UDPWrapper(const UDPWrapper &copy) = delete;
-		UDPWrapper& operator=(const UDPWrapper &copy) = delete;
+class UDPWrapper
+{
+public:
+	UDPWrapper(NetUtil::PAddressResolver resolver);
+	~UDPWrapper();
 
-		UDPWrapper(UDPWrapper &&move) = default;
-		UDPWrapper& operator=(UDPWrapper &&move) = default;
+	UDPWrapper(const UDPWrapper &copy) = delete;
+	UDPWrapper& operator=(const UDPWrapper &copy) = delete;
 
-		bool SendPacket(const URI &srcAddress, const URI &destAddress);
+	UDPWrapper(UDPWrapper &&move) = default;
+	UDPWrapper& operator=(UDPWrapper &&move) = default;
 
-	private:
-		void CreatePacket(const URI &srcAddress, const URI &destAddress);
+	bool SendPacket(const URI &srcAddress, const URI &destAddress);
 
-	private:
-		NetUtil::IPPacket m_currentPacket;
-		sockaddr_in m_sin;
+private:
+	void CreatePacket(const URI &srcAddress, const URI &destAddress);
 
-		int m_socketHandle;
+private:
+	NetUtil::IPPacket m_currentPacket;
+	sockaddr_in m_sin;
 
-		NetUtil::PAddressResolver m_resolver;
-	};
+	int m_socketHandle;
 
-	class UDPAddressResolver : public NetUtil::AddressResolver
-	{
-	public:
-		NetUtil::PossibleAddress ResolveHostAddress(const URI &hostAddress) override;
-	};
+	NetUtil::PAddressResolver m_resolver;
+};
+
+class UDPAddressResolver : public NetUtil::AddressResolver
+{
+public:
+	NetUtil::PossibleAddress ResolveHostAddress(const URI &hostAddress) override;
+};
 }
 
 

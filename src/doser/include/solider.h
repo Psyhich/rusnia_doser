@@ -13,7 +13,7 @@
 class Solider
 {
 public:
-	Solider(Attackers::PTarget target, SPProxyGetter proxyGetter) : 
+	Solider(Attackers::PTarget target, Wrappers::HTTP::SPProxyGetter proxyGetter) : 
 		m_target{target},
 		m_proxyGetter{proxyGetter}
 	{}
@@ -46,10 +46,10 @@ public:
 
 private:
 	static void ExecuteOrders(const TaskController &task,
-		Attackers::Target &target, SPProxyGetter proxyGetter);
+		Attackers::Target &target, Wrappers::HTTP::SPProxyGetter proxyGetter);
 
 	static Attackers::PGun GunFactory(Attackers::AttackMethod attackMethod,
-		const TaskController &owningTask, SPProxyGetter proxyGetter,
+		const TaskController &owningTask, Wrappers::HTTP::SPProxyGetter proxyGetter,
 		NetUtil::PAddressResolver tcpAddressResolver,
 		NetUtil::PAddressResolver udpAdressResolver);
 	
@@ -57,7 +57,7 @@ private:
 	TaskController m_task;
 
 	Attackers::PTarget m_target;
-	SPProxyGetter m_proxyGetter;
+	Wrappers::HTTP::SPProxyGetter m_proxyGetter;
 };
 
 #endif // SOLIDER_H

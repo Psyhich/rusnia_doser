@@ -7,9 +7,25 @@
 #include <optional>
 
 #include "api_interface.h"
+#include "module.h"
 #include "net_utils.h"
 #include "uri.h"
 #include "resolvers.h"
+
+namespace Wrappers::TCP
+{
+
+class TCPModule : public IModule
+{
+public:
+	TCPModule() = default;
+	~TCPModule() override {}
+
+	bool Initialize() override
+	{
+		return true;
+	}
+};
 
 class TCPWrapper
 {
@@ -40,6 +56,8 @@ public:
 	{}
 
 	NetUtil::PossibleAddress ResolveHostAddress(const URI &hostAddress) override;
+};
+
 };
 
 #endif // SOCKET_WRAPPER_H

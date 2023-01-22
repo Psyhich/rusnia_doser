@@ -12,6 +12,7 @@
 #include "proxy_checker.h"
 
 using namespace Attackers;
+using namespace Wrappers::HTTP;
 
 bool HTTPGun::LoadProxies()
 {
@@ -119,7 +120,7 @@ std::optional<HTTPGun::TargetStatus> HTTPGun::AttackWithNoProxy(const URI &targe
 {
 	size_t errorsCount{0};
 
-	m_headers = HTTP::BASE_HEADERS;
+	m_headers = BASE_HEADERS;
 	m_wrapper.SetTarget(targetToKill.GetFullURI());
 
 	while(!m_currentTask.ShouldStop())
@@ -147,7 +148,7 @@ std::optional<HTTPGun::TargetStatus> HTTPGun::AttackWithNoProxy(const URI &targe
 			{
 				if(++errorsCount > AttackerConfig::MAX_ATTACK_ERRORS_COUNT)
 				{
-					SPDLOG_WARN("Too many errors emited on no proxy attack, leaving");
+					SPDLOG_INFO("Too many errors emited on no proxy attack, leaving");
 					return targetStatusAfterAttack;
 				}
 			}
@@ -166,11 +167,11 @@ std::optional<HTTPGun::TargetStatus> HTTPGun::AttackWithProxy(const URI &targetT
 	}
 
 	m_wrapper.SetTarget(targetToKill.GetFullURI());
-	m_headers = HTTP::BASE_HEADERS;
+	m_headers = BASE_HEADERS;
 
 	std::size_t errorsCount{0};
 
-	HTTP::Proxy currentProxy;
+	Proxy currentProxy;
 	while(!m_currentTask.ShouldStop())
 	{
 		if(!m_availableProxies.empty())

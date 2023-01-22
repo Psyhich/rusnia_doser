@@ -8,8 +8,17 @@
 #include "curl_utils.h"
 #include "http_wrapper.h"
 
-namespace HTTP
+namespace Wrappers::HTTP
 {
+
+HTTPModule::~HTTPModule()
+{
+	curl_global_cleanup();
+}
+bool HTTPModule::Initialize()
+{
+	return !curl_global_init(CURL_GLOBAL_ALL);
+}
 
 HTTPWrapper::HTTPWrapper() :
 	m_headersConfig(nullptr, {})
@@ -91,6 +100,7 @@ std::optional<HTTPCode> HTTPWrapper::Ping(long timeout)
 	const CURLcode code = curl_easy_perform(m_curlEnv.get());
 	if(!CURL_UTILS::ProcessCode(code))
 	{
+		SPDLOG_INFO("Got such error from curl: {}", curl_easy_strerror(code));
 		return {};
 	}
 	

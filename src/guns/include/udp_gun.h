@@ -17,7 +17,7 @@ namespace Attackers
 
 		std::size_t FireTillDead(const URI &targetToKill) override;
 	private:
-		Wrappers::UDPWrapper m_flooder;
+		Wrappers::UDP::UDPWrapper m_flooder;
 	};
 }
 

@@ -11,9 +11,18 @@
 #include "api_interface.h"
 #include "http_structs.hpp"
 #include "curl_utils.h"
+#include "module.h"
 
-namespace HTTP
+namespace Wrappers::HTTP
 {
+
+class HTTPModule : public IModule
+{
+public:
+	HTTPModule() = default;
+	~HTTPModule() override;
+	bool Initialize() override;
+};
 
 class HTTPWrapper
 {

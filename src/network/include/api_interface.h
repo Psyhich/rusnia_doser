@@ -11,6 +11,9 @@
 #include "multithread.h"
 #include "http_structs.hpp"
 
+namespace Wrappers::HTTP
+{
+
 class IProxyGetter
 {
 public:
@@ -26,5 +29,6 @@ class EmptyProxyGetter : public IProxyGetter
 	}
 };
 
+}
 
 #endif // API_INTERFACE_H

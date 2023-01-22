@@ -10,7 +10,7 @@
 #include "curl/curl.h"
 #include "http_structs.hpp"
 
-namespace HTTP::CURL_UTILS
+namespace Wrappers::HTTP::CURL_UTILS
 {
 struct CURLDeleter
 {

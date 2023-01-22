@@ -8,12 +8,16 @@
 #include "udp_gun.h"
 #include "wrappers/tcp_wrapper.h"
 
+using namespace Wrappers::HTTP;
+using namespace Wrappers::TCP;
+using namespace Wrappers::UDP;
+
 void Solider::ExecuteOrders(const TaskController &task,
 	Attackers::Target &target, SPProxyGetter proxyGetter)
 {
 	std::size_t hitsCount{0};
 	NetUtil::PAddressResolver tcpResolver{std::make_unique<TCPAddressResolver>()};
-	NetUtil::PAddressResolver udpResolver{std::make_unique<Wrappers::UDPAddressResolver>()};
+	NetUtil::PAddressResolver udpResolver{std::make_unique<UDPAddressResolver>()};
 
 	Attackers::PGun gun;
 	while(!task.ShouldStop())

@@ -6,7 +6,7 @@
 #include <map>
 #include <vector>
 
-namespace HTTP
+namespace Wrappers::HTTP
 {
 
 using Headers = std::map<std::string, std::string>;

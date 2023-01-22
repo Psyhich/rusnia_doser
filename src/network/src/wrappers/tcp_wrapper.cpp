@@ -19,6 +19,8 @@
 #include "net_utils.h"
 #include "config.h"
 
+using namespace Wrappers::TCP;
+
 TCPWrapper::TCPWrapper(NetUtil::PAddressResolver resolver) :
 	m_resolver{resolver}
 {

@@ -7,8 +7,9 @@
 #include "curl_utils.h"
 #include "http_structs.hpp"
 
-namespace HTTP::CURL_UTILS
+namespace Wrappers::HTTP::CURL_UTILS
 {
+
 CURLInitializer::CURLInitializer()
 {
 	if(!curl_global_init(CURL_GLOBAL_ALL))

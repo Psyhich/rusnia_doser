@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <thread>
 #include <chrono>
@@ -14,6 +15,7 @@
 #include "multithread.h"
 #include "static_target.hpp"
 #include "target.hpp"
+#include "wrappers/http_wrapper.h"
 
 static TaskController g_mainTask;
 
@@ -30,7 +32,7 @@ void signalHanlder(int)
 std::vector<Solider> CreateSquad(const Attackers::Tactic &tactic)
 {
 	auto target{ProduceTarget(tactic)};
-	auto proxyGetter{std::make_shared<EmptyProxyGetter>()};
+	auto proxyGetter{std::make_shared<Wrappers::HTTP::EmptyProxyGetter>()};
 	std::vector<Solider> squad;
 
 	squad.reserve(tactic.squadSize);
@@ -63,6 +65,12 @@ int main(int argc, char **argv)
 	if(!tactic)
 	{
 		return -1;
+	}
+
+	Wrappers::HTTP::HTTPModule httpModule;
+	if(!httpModule.Initialize())
+	{
+		SPDLOG_CRITICAL("Failed to initialize HTTP module, exiting");
 	}
 
 	g_mainTask.StartExecution();

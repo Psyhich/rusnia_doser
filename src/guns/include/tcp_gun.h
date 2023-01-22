@@ -23,7 +23,7 @@ private:
 	bool ShootTarget(const URI &targetToKill, std::size_t &hitsCount);
 
 private:
-	TCPWrapper m_attacker;
+	Wrappers::TCP::TCPWrapper m_attacker;
 };
 
 

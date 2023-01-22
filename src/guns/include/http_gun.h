@@ -23,7 +23,7 @@ class HTTPGun : public IGun
 		ErrorWhileRequesting
 	};
 public:
-	HTTPGun(const TaskController &task, SPProxyGetter proxyGetter) :
+	HTTPGun(const TaskController &task, Wrappers::HTTP::SPProxyGetter proxyGetter) :
 		IGun(task),
 		m_proxyGetter{proxyGetter}
 	{}
@@ -49,11 +49,11 @@ private:
 		m_wrapper.SetHeaders(m_headers);
 	}
 private:
-	std::deque<HTTP::Proxy> m_availableProxies;
+	std::deque<Wrappers::HTTP::Proxy> m_availableProxies;
 
-	HTTP::Headers m_headers{HTTP::BASE_HEADERS};
-	HTTP::HTTPWrapper m_wrapper;
-	SPProxyGetter m_proxyGetter;
+	Wrappers::HTTP::Headers m_headers{Wrappers::HTTP::BASE_HEADERS};
+	Wrappers::HTTP::HTTPWrapper m_wrapper;
+	Wrappers::HTTP::SPProxyGetter m_proxyGetter;
 };
 
 } // Attackers 
