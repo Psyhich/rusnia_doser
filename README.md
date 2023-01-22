@@ -1,6 +1,13 @@
 # Rusnia DDoS'er
 A multipurpose DDoS tool with automatic and manual modes written on C++.
 
+## Goal
+Create easy to customize and modify DoS attacker with such base features:
+ - HTTP request flood
+ - UDP flood
+ - TCP flood
+ - 1 more other example of DoS attack to demonstrate customization
+
 ## How to build
 ### Compiling from sources
 To compile this project from sources you will need:
