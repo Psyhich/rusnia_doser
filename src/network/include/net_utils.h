@@ -49,7 +49,6 @@ namespace NetUtil
 	{
 		headers["User-Agent"] = ChoseUseragent();
 		headers["X-Forwarder-For"] = proxyIP;
-		headers["Cf-Visitor"] = "https";
 		headers["X-Forwarded-Proto"]  = "https";
 	}
 
