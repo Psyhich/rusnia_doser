@@ -1,7 +1,6 @@
 #include <thread>
 
 #include "setup.h"
-#include "spdlog/spdlog.h"
 
 bool Setup::SetupArgs(Args::CmdLine &cmd)
 {

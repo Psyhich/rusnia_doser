@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
 
-#include "spdlog/spdlog.h"
 #include "spdlog/common.h"
+
 
 #include "logging.h"
 

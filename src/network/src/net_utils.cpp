@@ -7,8 +7,6 @@
 #include <array>
 #include <charconv>
 
-#include <spdlog/spdlog.h>
-
 #include "net_utils.h"
 
 const std::array<std::string, 500> useragents = 

@@ -1,7 +1,5 @@
 #include <iterator>
 
-#include "spdlog/spdlog.h"
-
 #include "http_gun.h"
 
 #include "wrappers/http_wrapper.h"

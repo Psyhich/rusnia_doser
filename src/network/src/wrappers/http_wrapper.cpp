@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include <curl/curl.h>
-#include <spdlog/spdlog.h>
 
 #include "curl_utils.h"
 #include "http_wrapper.h"

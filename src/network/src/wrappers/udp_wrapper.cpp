@@ -8,7 +8,6 @@
 #include <netinet/udp.h>
 
 #include "net_utils.h"
-#include "spdlog/spdlog.h"
 
 #include "udp_wrapper.h"
 #include "utils.h"

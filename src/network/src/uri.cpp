@@ -8,8 +8,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "spdlog/fmt/fmt.h"
-
 #include "uri.h"
 
 std::string URI::ConstructFrom(const std::string &protocol, 

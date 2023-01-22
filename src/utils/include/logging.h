@@ -3,6 +3,14 @@
 
 #include <memory>
 
+#ifdef DEBUG_LOGS
+	#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#else
+	#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
+#endif // DEBUG_LOGS
+
+#include "spdlog/spdlog.h"
+
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
 

@@ -1,8 +1,6 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
-#include "spdlog/spdlog.h"
-
 #include "tcp_gun.h"
 
 #include "api_interface.h"

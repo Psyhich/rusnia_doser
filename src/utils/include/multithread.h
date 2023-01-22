@@ -9,8 +9,6 @@
 #include <stdexcept>
 #include <utility>
 
-#include "spdlog/spdlog.h"
-
 class TaskController
 {
 public:

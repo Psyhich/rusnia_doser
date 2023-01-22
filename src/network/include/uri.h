@@ -6,7 +6,7 @@
 #include <optional>
 #include <array>
 
-#include <spdlog/fmt/fmt.h>
+#include "logging.h"
 
 /// Utility class for easier parsing of URIs 
 /// specified by RFC3986

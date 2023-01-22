@@ -6,6 +6,7 @@
 #include "args-parser/all.hpp"
 
 #include "target.hpp"
+
 namespace Setup
 {
 	bool SetupArgs(Args::CmdLine &cmd);
