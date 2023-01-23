@@ -4,6 +4,7 @@ add_library(doser_guns STATIC
 	${SRC}/http_gun.cpp
 	${SRC}/tcp_gun.cpp
 	${SRC}/udp_gun.cpp
+	${SRC}/gun_holder.cpp
 )
 target_include_directories(doser_guns
 	PUBLIC include/

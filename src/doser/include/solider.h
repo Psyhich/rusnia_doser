@@ -48,11 +48,6 @@ private:
 	static void ExecuteOrders(const TaskController &task,
 		Attackers::Target &target, Wrappers::HTTP::SPProxyGetter proxyGetter);
 
-	static Attackers::PGun GunFactory(Attackers::AttackMethod attackMethod,
-		const TaskController &owningTask, Wrappers::HTTP::SPProxyGetter proxyGetter,
-		NetUtil::PAddressResolver tcpAddressResolver,
-		NetUtil::PAddressResolver udpAdressResolver);
-	
 private:
 	TaskController m_task;
 
